@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
+import struct
 import threading
+import time
 
 import pytest
 
@@ -18,6 +21,21 @@ from continuity.webui.server import WebUIServer
 @pytest.fixture
 def webui():
     server = WebUIServer(port=0)
+    thread = threading.Thread(
+        target=server.serve_forever, name="webui-test-server", daemon=True
+    )
+    thread.start()
+    try:
+        yield server
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+
+@pytest.fixture
+def webui_short_timeout():
+    """连接超时 0.5s 的服务器（用于空闲连接被关闭的回归测试）。"""
+    server = WebUIServer(port=0, connection_timeout=0.5)
     thread = threading.Thread(
         target=server.serve_forever, name="webui-test-server", daemon=True
     )
@@ -201,3 +219,40 @@ def test_main_help_mentions_default_8777(capsys):
         main(["--help"])
     out = capsys.readouterr().out
     assert "默认 8777" in out
+
+
+# —— 复审修复回归（A3 空闲超时 / A8 断连静默） ——
+
+def test_idle_connection_closed_by_timeout(webui_short_timeout):
+    """回归（A3）：空闲连接在 connection_timeout 后被服务器关闭，线程不被永久占用。"""
+    server = webui_short_timeout
+    conn = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+    conn.settimeout(10)
+    data = conn.recv(1)  # 不发任何请求：服务器应在 ~0.5s 后关闭连接
+    conn.close()
+    assert data == b""
+    # 线程池未被占死：服务器仍能正常响应
+    status, _, body = _raw(server, "/api/health", token=server.token)
+    assert status == 200
+    assert json.loads(body.decode("utf-8")) == {"status": "ok"}
+
+
+def test_abrupt_disconnect_no_traceback(webui, capsys):
+    """回归（A8）：客户端 RST 粗暴断连不得向 stderr 打印 Traceback（日志刷屏防护）。"""
+    server = webui
+    conn = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+    conn.sendall(
+        b"GET /api/health HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Continuity-Token: "
+        + server.token.encode("ascii")
+        + b"\r\n"  # 头部未终结（缺空行），服务器将阻塞在读行
+    )
+    time.sleep(0.1)  # 让服务器线程进入读取
+    conn.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))  # 关闭即 RST
+    conn.close()
+    time.sleep(0.3)
+    # 服务器仍健康
+    status, _, body = _raw(server, "/api/health", token=server.token)
+    assert status == 200
+    assert json.loads(body.decode("utf-8")) == {"status": "ok"}
+    err = capsys.readouterr().err
+    assert "Traceback" not in err

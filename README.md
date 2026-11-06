@@ -111,9 +111,9 @@ $env:TMP = "D:\项目1agent角色平台\.tmp"; $env:TEMP = $env:TMP
 & $py -m pytest
 ```
 
-- Current result (after W2, 2026-11-06): **179 collected = 178 passed + 1 skipped**
+- Current result (after W1+W2 strict re-audit fixes, 2026-11-06): **187 collected = 186 passed + 1 skipped**
   (the 1 skip is the Windows symlink-privilege case, an environment limitation handled inside the test).
-  当前结果（W2 后，2026-11-06）：**179 collected = 178 passed + 1 skipped**
+  当前结果（W1+W2 严格复审修复后，2026-11-06）：**187 collected = 186 passed + 1 skipped**
   （跳过 1 例为 Windows 符号链接权限，属环境限制，测试内已处理）。
 - Restricted-environment adaptations (`--basetemp`, the `os.mkdir(0o700)` rewrite, disabling
   cacheprovider) are baked into `pyproject.toml` and `tests/conftest.py` — **do not remove them**.

@@ -18,6 +18,14 @@ STATE_RUNNING = "running"
 STATE_SUCCEEDED = "succeeded"
 STATE_FAILED = "failed"
 TERMINAL_STATES = frozenset({STATE_SUCCEEDED, STATE_FAILED})
+ACTIVE_STATES = frozenset({STATE_QUEUED, STATE_RUNNING})
+
+# 已完成任务的内存保留上限（防任务字典无限增长；同时队列本身至多 1 个活动任务）
+MAX_FINISHED_JOBS = 64
+
+
+class JobQueueFullError(RuntimeError):
+    """已有任务正在排队或运行，拒绝新提交（对应 HTTP 409）。"""
 
 
 @dataclass
@@ -72,10 +80,17 @@ class JobManager:
     # —— 对外接口 ——
 
     def submit(self, fn: Callable[[], Any]) -> str:
-        """提交任务并返回 job id；队列停止后提交会抛 RuntimeError。"""
+        """提交任务并返回 job id。
+
+        单任务串行（与 docs/webui-plan.md 第 3 节一致）：同一时刻至多 1 个
+        待处理/运行任务，忙碌时抛 JobQueueFullError（server 映射 409）；
+        队列停止后提交抛 RuntimeError（server 映射 503）。
+        """
         with self._lock:
             if self._stopped:
                 raise RuntimeError("任务队列已停止，无法提交新任务")
+            if any(j.state in ACTIVE_STATES for j in self._jobs.values()):
+                raise JobQueueFullError("已有任务正在排队或运行，请等待其完成后再提交")
             job = Job(id=uuid.uuid4().hex[:12], fn=fn)
             self._jobs[job.id] = job
         self._queue.put(job.id)
@@ -130,3 +145,14 @@ class JobManager:
             finally:
                 job.finished_at = time.time()
                 self._local.job = None
+                with self._lock:
+                    self._prune_locked()
+
+    def _prune_locked(self) -> None:
+        """已完成任务只保留最近 MAX_FINISHED_JOBS 个（调用方必须已持锁）。"""
+        finished = [j for j in self._jobs.values() if j.state in TERMINAL_STATES]
+        if len(finished) <= MAX_FINISHED_JOBS:
+            return
+        oldest = sorted(finished, key=lambda j: j.finished_at or 0.0)
+        for job in oldest[: len(finished) - MAX_FINISHED_JOBS]:
+            self._jobs.pop(job.id, None)

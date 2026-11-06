@@ -1,4 +1,9 @@
-"""W1：任务队列真实运行测试——串行执行、状态机、错误透传、日志、停止。"""
+"""W1：任务队列真实运行测试——串行执行、状态机、错误透传、日志、停止。
+
+W2 复审修复后语义（docs/webui-plan.md 第 3 节）：同一时刻至多 1 个
+待处理/运行任务，忙碌时 submit 抛 JobQueueFullError；已完成任务
+内存保留上限 64。
+"""
 from __future__ import annotations
 
 import threading
@@ -6,7 +11,7 @@ import time
 
 import pytest
 
-from continuity.webui.jobs import JobManager
+from continuity.webui.jobs import JobManager, JobQueueFullError
 
 TERMINAL = frozenset({"succeeded", "failed"})
 
@@ -38,39 +43,46 @@ def test_success_result(manager):
     assert snap["finished_at"] is not None
 
 
-def test_serial_execution_and_order(manager):
+def test_second_submit_rejected_while_active(manager):
+    """回归（A5）：已有任务排队/运行时，新提交被拒（JobQueueFullError）。"""
     gate = threading.Event()
-    order = []
 
     def first():
-        order.append("first-start")
         gate.wait(timeout=5)
-        order.append("first-end")
         return "a"
 
-    def second():
-        order.append("second-start")
-        return "b"
-
     id1 = manager.submit(first)
-    id2 = manager.submit(second)
-
-    # 第一个任务被门闩挡住期间，第二个必须保持排队（串行队列）
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline and manager.get(id1)["state"] != "running":
         time.sleep(0.01)
     assert manager.get(id1)["state"] == "running"
-    assert manager.get(id2)["state"] == "queued"
-    assert "second-start" not in order
+
+    with pytest.raises(JobQueueFullError):
+        manager.submit(lambda: "b")
 
     gate.set()
-    snap1 = wait_state(manager, id1)
-    snap2 = wait_state(manager, id2)
-    assert snap1["state"] == "succeeded"
+    snap = wait_state(manager, id1)
+    assert snap["state"] == "succeeded"
+    assert snap["result"] == "a"
+
+
+def test_submit_after_completion_ok(manager):
+    """回归（A5）：前一个任务结束后，新提交恢复正常。"""
+    wait_state(manager, manager.submit(lambda: "first"))
+    snap2 = wait_state(manager, manager.submit(lambda: "second"))
     assert snap2["state"] == "succeeded"
-    assert snap2["result"] == "b"
-    assert order == ["first-start", "first-end", "second-start"]
-    assert snap1["finished_at"] <= snap2["finished_at"]
+    assert snap2["result"] == "second"
+
+
+def test_finished_jobs_pruned_to_cap(manager):
+    """回归（A7）：已完成任务内存保留有上限（64），字典不会无限增长。"""
+    for i in range(70):
+        job_id = manager.submit(lambda i=i: i)
+        wait_state(manager, job_id)
+    finished = [j for j in manager._jobs.values() if j.state in TERMINAL]
+    assert len(finished) <= 64
+    assert len(manager._jobs) == len(finished)  # 无活动任务时字典即保留区
+    assert len(manager._jobs) <= 64
 
 
 def test_failure_captured(manager):

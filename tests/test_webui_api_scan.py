@@ -243,3 +243,25 @@ def test_scan_jobs_stopped_503(webui, tmp_path):
     status, payload = _post(webui, "/api/jobs/scan", {"source": str(tree)}, token=webui.token)
     assert status == 503
     assert payload["kind"] == "JobsError"
+
+
+def test_scan_second_submit_busy_409(webui, tmp_path):
+    """回归（A5+A7）：已有任务运行中再次提交扫描 → 409 JobsBusy；完成后可再次提交。"""
+    gate = threading.Event()
+    blocker = webui.jobs.submit(lambda: gate.wait(timeout=5))
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and webui.jobs.get(blocker)["state"] != "running":
+        time.sleep(0.01)
+    assert webui.jobs.get(blocker)["state"] == "running"
+
+    tree = make_st_sample_tree(tmp_path / "stdata")
+    status, payload = _post(webui, "/api/jobs/scan", {"source": str(tree)}, token=webui.token)
+    assert status == 409
+    assert payload["kind"] == "JobsBusy"
+    assert "已有任务" in payload["error"]
+
+    gate.set()
+    _wait_job(webui, blocker)
+
+    snap = _run_scan(webui, tree)
+    assert snap["state"] == "succeeded"

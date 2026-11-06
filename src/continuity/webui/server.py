@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Optional
@@ -18,7 +19,7 @@ from urllib.parse import urlsplit
 
 from .. import __version__
 from . import api as api_module
-from .jobs import JobManager
+from .jobs import JobManager, JobQueueFullError
 from .validation import MAX_BODY_BYTES, ValidationError, host_is_allowed, parse_json_body, require_source_dir
 from .views import json_bytes
 
@@ -53,6 +54,17 @@ _CSP = (
 )
 
 
+class _QuietThreadingHTTPServer(ThreadingHTTPServer):
+    """网络级连接错误（客户端粗暴断连等）静默为 debug 日志。
+
+    默认实现的 handle_error 会把完整 traceback 打印到 stderr——攻击者可通过
+    反复 RST 刷屏日志；此处只记一条 debug 级摘要。
+    """
+
+    def handle_error(self, request, client_address) -> None:
+        logger.debug("连接级错误（已静默） %s: %r", client_address, sys.exc_info()[1])
+
+
 class WebUIServer:
     """本地 Web UI 服务器：threading HTTP 服务 + 随机访问令牌。"""
 
@@ -62,12 +74,14 @@ class WebUIServer:
         *,
         token: Optional[str] = None,
         static_dir: Optional[Path] = None,
+        connection_timeout: float = 30.0,  # 空闲/慢连接超时（slowloris 防护）
     ) -> None:
         self.token = token or secrets.token_urlsafe(32)
         self.static_dir = (static_dir or STATIC_DIR).resolve()
         self.index_bytes = (self.static_dir / "index.html").read_bytes()
+        self.connection_timeout = connection_timeout
         self.jobs = JobManager()  # 后台任务队列（W2 起：scan 等长任务串行执行）
-        self.httpd = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
+        self.httpd = _QuietThreadingHTTPServer(("127.0.0.1", port), _Handler)
         self.httpd.daemon_threads = True
         self.httpd.webui = self  # type: ignore[attr-defined]  处理器经此访问配置
 
@@ -101,6 +115,12 @@ class _Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:  # 静默访问日志（调试级）
         logger.debug("%s %s", self.address_string(), fmt % args)
 
+    def setup(self) -> None:  # noqa: N802 — socketserver 生命周期方法
+        super().setup()
+        # slowloris 防护：读超时后 readline 抛 TimeoutError，
+        # BaseHTTPRequestHandler.handle_one_request 会关闭该连接并释放线程。
+        self.connection.settimeout(self.server.webui.connection_timeout)
+
     # —— 请求入口 ——
 
     def do_GET(self) -> None:  # noqa: N802 — BaseHTTPRequestHandler 命名约定
@@ -129,10 +149,10 @@ class _Handler(BaseHTTPRequestHandler):
                 self._serve_api(path)
             else:
                 self._send_json(404, {"error": "未找到该页面或接口", "kind": "NotFound"})
-        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
-            pass  # 客户端提前断开：静默结束
-        except Exception:
-            logger.exception("请求处理失败")
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, TimeoutError):
+            pass  # 客户端断开或读超时：静默结束，不污染日志
+        except Exception as exc:
+            logger.error("请求处理失败（已响应 500）: %r", exc)
             try:
                 self._send_json(500, {"error": "服务器内部错误", "kind": "InternalError"})
             except Exception:
@@ -246,6 +266,10 @@ class _Handler(BaseHTTPRequestHandler):
             job_id = self.server.webui.jobs.submit(
                 lambda: api_module.scan_worker(str(source), log=self.server.webui.jobs.log)
             )
+        except JobQueueFullError as exc:
+            # 串行任务忙碌：按计划返回 409 提示等待（不再无限排队）
+            self._send_json(409, {"error": str(exc), "kind": "JobsBusy"})
+            return
         except RuntimeError as exc:  # 队列已停止
             self._send_json(503, {"error": str(exc), "kind": "JobsError"})
             return
