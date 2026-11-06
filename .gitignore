@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# 本地环境与依赖
+.venv/
+venv/
+.deps/
+.deps2/
+.wheels/
+.tmp/
+
+# 生成的合成样本（可用 samples/synthetic/make_samples.py 重新生成）
+samples/synthetic/out/
+
+# 交付物与派生文件（不入库，保留在本地）
+continuity-studio-review.zip
+_docx_text.txt

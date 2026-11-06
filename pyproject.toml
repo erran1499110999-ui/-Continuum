@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "continuity-studio"
+version = "0.1.0"
+description = "Continuity Studio — 本地优先的 AI 角色备份、诊断、修复与迁移工具（MVP 阶段）"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+continuity = "continuity.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 受限环境适配（详见 tests/conftest.py 的 os.mkdir 补丁）：
+# - --basetemp 用 ASCII 目录名，避开 pytest 默认的 "pytest-of-<中文用户名>" 目录（沙箱拒绝列出中文叶子目录名）；
+# - 0o700 目录在沙箱中会被上锁（连创建进程都无法访问），conftest 已把 mkdir 的 0o700 改写为 0o755；
+# - 禁用 cacheprovider 的原子缓存写入（其临时文件机制被沙箱拒绝）。
+addopts = "-q --basetemp=.tmp/pytest-basetemp2 -p no:cacheprovider"
