@@ -16,7 +16,9 @@ from typing import List, Optional, Tuple
 
 from ..models import FileKind, RepairLevel
 
+# 末尾多余逗号模式：逗号后紧跟 } 或 ]（容许多余空白）
 _TRAILING_COMMA_RE = re.compile(r",\s*([}\]])")
+# 迭代上限：防止「修了又坏」的怪文件导致死循环；超过即放弃并返回 None
 _MAX_ITERATIONS = 100
 
 
@@ -73,7 +75,8 @@ def plan_file(rel: str, kind: FileKind, text: str) -> Tuple[List[RepairFix], str
     current = text
 
     if kind in (FileKind.TEXT, FileKind.JSON, FileKind.CHARACTER_CARD_JSON):
-        # R0-002：去除 UTF-8 BOM
+        # R0-002：去除 UTF-8 BOM——必须先于一切 JSON 修复：
+        # BOM 会让 json.loads 直接失败，不剥掉则后续规则无法生效
         if current.startswith("\ufeff"):
             fixed = current[1:]
             fixes.append(

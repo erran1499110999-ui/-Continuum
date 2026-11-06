@@ -11,7 +11,7 @@ import zlib
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"  # PNG 签名（规范 ISO/IEC 15948）
 
 _CRC_CHUNK = 1024 * 1024  # IDAT 增量 CRC 的缓冲区大小
 
@@ -45,6 +45,7 @@ def read_png_info(data: bytes) -> PngInfo:
         expected = zlib.crc32(ctype + cdata) & 0xFFFFFFFF
         if crc != expected:
             info.errors.append(f"块 {ctype!r} CRC 校验失败")
+        # tEXt 仅在 CRC 通过时收录：损坏块的内容不可信，宁缺勿错
         if ctype == b"tEXt" and crc == expected:
             keyword, _, text = cdata.partition(b"\x00")
             info.text_chunks[keyword.decode("latin-1", errors="replace")] = text
@@ -125,6 +126,7 @@ def read_png_info_stream(
                 info.complete = not info.errors
                 break
         else:
+            # for/else：循环未被 break 结束 = 读满 max_chunks 仍未到 IEND
             info.errors.append(f"块数量超过上限 {max_chunks}")
     return info
 

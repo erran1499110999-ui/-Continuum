@@ -38,6 +38,7 @@ CHAT_LINES = [
     {"name": "合成样本·测试角色", "is_user": False, "mes": "收到。", "send_date": 1767697202000},
 ]
 
+# 世界书最小结构（entries + character_book 双字段是识别依据，见 looks_like_world_info）
 WORLD_INFO = {
     "entries": {"0": {"keys": ["测试关键词"], "content": "合成世界观条目"}},
     "character_book": {},
@@ -45,12 +46,15 @@ WORLD_INFO = {
 
 
 def png_chunk(ctype: bytes, data: bytes) -> bytes:
+    """构造单个 PNG 块：长度 + 类型 + 数据 + CRC（规范 ISO/IEC 15948）。"""
     body = ctype + data
     return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
 
 
 def make_card_png(card: dict) -> bytes:
+    """把角色卡 JSON 嵌入 PNG tEXt chara 块（base64），生成 1×1 合法卡图。"""
     payload = base64.b64encode(json.dumps(card, ensure_ascii=False).encode("utf-8"))
+    # 1x1、8bit、真彩色 IHDR；IDAT 为单像素红色（filter 0 + RGB）
     ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
     idat = zlib.compress(b"\x00\xff\x00\x00")
     return b"".join(
@@ -65,6 +69,7 @@ def make_card_png(card: dict) -> bytes:
 
 
 def main() -> int:
+    # 覆盖四类识别场景：合法卡（JSON/PNG）、聊天、世界书、两类损坏样本
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent / "out"
     out.mkdir(parents=True, exist_ok=True)
     (out / "st_card.json").write_text(

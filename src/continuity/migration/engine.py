@@ -144,6 +144,7 @@ def migrate_sillytavern(
                 )
             raise MigrationError("未找到角色卡（PNG tEXt chara 块或含 spec=chara_card 的 JSON）")
         json_cards = [f for f in card_files if f.kind is FileKind.CHARACTER_CARD_JSON]
+        # 主卡优先选 JSON 卡：内容可直接逐字段比对；无 JSON 卡时退而用首张 PNG 卡
         primary = json_cards[0] if json_cards else card_files[0]
         report.primary_card = primary.rel_path
 
@@ -161,6 +162,7 @@ def migrate_sillytavern(
         ]
         world_files: List[ScanFile] = []
         for f in sorted(scan.files, key=lambda x: x.rel_path):
+            # 仅在「合法 JSON」候选内识别世界书：避免对每个文件做 json.loads（性能 + 只读原则）
             if f.kind is FileKind.JSON:
                 try:
                     obj = json.loads((source / _to_path(f.rel_path)).read_text(encoding="utf-8"))
@@ -175,6 +177,8 @@ def migrate_sillytavern(
             | {f.rel_path for f in world_files}
         )
         corrupt_files = [f for f in scan.files if f.kind is FileKind.CORRUPT_PNG]
+        # 附件 = 未被识别为卡/聊天/世界书且非损坏 PNG 的其余文件；
+        # 损坏 PNG 不混入常规附件，单独走下方「按字节保留 + 人工确认」路径（0.1.2）
         asset_files = [
             f
             for f in sorted(scan.files, key=lambda x: x.rel_path)
@@ -402,6 +406,7 @@ def _verify(
             )
             checked += 1
         elif src_chat.messages == out_chat.messages:
+            # 深比较整条消息列表：消息数、顺序、时间戳、元数据全等才判 ok（提示词 7）
             report.items.append(
                 {
                     "field": f"聊天.{f.rel_path}.消息",
@@ -452,6 +457,8 @@ def _verify(
             )
         checked += 1
 
+    # 空分母（checked=0）记为 1.0：无「可检查的支持项」不代表满分成就，
+    # 语义由 score_label 与 denominator_explanation 解释（0.1.1 修复）
     score = (matched / checked) if checked else 1.0
     report.completeness = {
         "score_label": "已检查支持项匹配率",

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 # 可执行/二进制程序类（R3：隔离，绝不执行）
+# 注意：本清单只增不减需谨慎——误判为安全会导致执行导入内容（规则 3）
 EXECUTABLE_EXTENSIONS = frozenset(
     {".exe", ".bat", ".cmd", ".ps1", ".vbs", ".msi", ".scr", ".com", ".dll"}
 )

@@ -1,42 +1,95 @@
-/* Continuity Studio 本地工作台样式（W1）。无外部字体/图片/CDN，完全离线。 */
-:root {
-  --bg: #101418;
-  --panel: #1a2129;
-  --border: #2c3642;
-  --text: #e6edf3;
-  --muted: #9aa7b4;
-  --accent: #4f9cf9;
-  --ok: #34c98e;
-  --warn: #e5a54b;
-  --err: #e56464;
+/* Continuity Studio 本地工作台样式（前端改版，2026-11-07）。
+   规则依据：docs/frontend-redesign-brief.md（创始人权威规范，优先级高于旧设计笔记）。
+   - 中文标题：宋体系（Noto Serif SC / 宋体回退），禁楷体/手写风格，不加负字距、不斜体；
+   - 中文正文/按钮/标签：黑体系（Noto Sans SC / 苹方 / 雅黑回退）；
+   - 两主题（浅=暖阳奶油·陶土 / 深=森林夜语）语义令牌集中维护，状态含义不随主题改变；
+   - 不新增粒子/光斑/循环背景动画；阴影与玻璃从简；动效仅作状态反馈并尊重 reduced-motion；
+   - 全部样式集中本文件（服务端 CSP 禁止内联样式，HTML 不得出现 style= 或 <style>）。
+   对比度：全部色值经 WCAG 2.1 相对亮度公式实测（脚本 .tmp/contrast-check*.py），
+   正文/次要文字/占位符/状态文字 ≥ 4.5:1，边框与焦点环 ≥ 3:1（非文本）。
+*/
+
+/* ========== 1. 语义令牌：浅色主题「暖阳奶油」（默认） ========== */
+:root, html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #FAF3E8;              /* 背景：暖奶油画布 */
+  --surface: #FFF9F0;         /* 主要表面：输入区/面板/导航激活底 */
+  --surface-muted: #F2E7D4;   /* 浅表面：R0-R3 行底、悬停底（比画布深一档） */
+  --text: #4A3B2C;            /* 正文（对 bg 9.75:1） */
+  --text-secondary: #7E6C52;  /* 次要文字/说明（对 bg 4.59:1，对 surface 4.83:1） */
+  --placeholder: #7E6C52;     /* 输入占位符（对 surface 4.83:1） */
+  --border: #A08A68;          /* 边框（对 surface 3.17:1，非文本达标） */
+  --primary: #E8843C;         /* 主操作：陶土杏橙 */
+  --primary-text: #3D2B1A;    /* 主操作文字（对 primary 5.00:1） */
+  --primary-hover: #DB7E3A;   /* 主操作悬停底（文字对比仍 4.53:1） */
+  --focus: #B95F1F;           /* 键盘焦点环（对 bg 4.04:1，可见） */
+  --success: #43703B;         /* R0 成功（对浅表面 4.74:1） */
+  --warning: #8A5908;         /* R1 需确认（对浅表面 4.88:1） */
+  --suggest: #6C5A3F;         /* R2 仅建议（对浅表面 5.41:1） */
+  --danger: #A6442C;          /* R3 隔离（对浅表面 4.92:1） */
 }
 
+/* ========== 2. 语义令牌：深色主题「森林夜语」 ========== */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16251F;              /* 背景：深森林绿 */
+  --surface: #223A30;         /* 主要表面（对文字 6.3:1 以上） */
+  --surface-muted: #1B2E26;   /* 浅表面（比背景浅一档） */
+  --text: #EAF2EA;            /* 正文（对 bg 13.95:1） */
+  --text-secondary: #A8C0B2;  /* 次要文字（对 bg 8.23:1） */
+  --placeholder: #8FA896;     /* 输入占位符（对 surface 4.78:1） */
+  --border: #6E927F;          /* 边框（对 surface 3.54:1） */
+  --primary: #7FBF9A;         /* 主操作：新叶绿 */
+  --primary-text: #12241B;    /* 主操作文字（对 primary 7.59:1） */
+  --primary-hover: #68A882;   /* 主操作悬停底（文字对比 5.81:1） */
+  --focus: #9AD8B4;           /* 键盘焦点环（对 surface 7.49:1） */
+  --success: #8CC9A8;         /* R0（对 bg 8.37:1） */
+  --warning: #E3C06B;         /* R1（对 bg 9.11:1） */
+  --suggest: #A8C0B2;         /* R2（对 bg 8.23:1） */
+  --danger: #E08E7E;          /* R3（对 bg 6.33:1） */
+}
+
+/* ========== 3. 字体令牌（中文宋体标题 / 黑体正文，禁楷体） ========== */
+:root {
+  --font-serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;   /* 标题：宋体系 */
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; /* 正文/按钮：黑体系 */
+  --font-mono: Consolas, "Courier New", monospace;                          /* 哈希/路径：等宽 */
+}
+
+/* ========== 4. 基础 ========== */
 * { box-sizing: border-box; }
-
 html, body { margin: 0; padding: 0; }
-
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.7;                       /* 中文连续阅读行距 */
+  /* 主题切换是状态反馈：仅过渡背景与文字色（reduced-motion 下关闭） */
+  transition: background-color 150ms ease, color 150ms ease;
 }
+/* 标题统一宋体系，字重 600（Noto Serif SC 提供；SimSun 回退由浏览器按常规渲染） */
+h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 600; }
+/* 键盘焦点：2px 焦点环 + 偏移，颜色走 --focus 令牌（两主题各自达标） */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
+/* ========== 5. 顶栏（品牌 + 主题切换 + 本机承诺） ========== */
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 16px 24px;
+  gap: 12px;
+  padding: 14px 24px;
   border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
+.brand h1 { margin: 0; font-size: 20px; }
+.brand .sub { margin: 2px 0 0; color: var(--text-secondary); font-size: 13px; }
+.topbar-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pledge { color: var(--success); font-size: 13px; }
 
-.brand h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
-.brand .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
-.pledge { color: var(--ok); font-size: 13px; }
-
+/* ========== 6. 功能导航（保留入口，不新增功能） ========== */
 .nav {
   display: flex;
   flex-wrap: wrap;
@@ -44,139 +97,253 @@ body {
   padding: 10px 24px;
   border-bottom: 1px solid var(--border);
 }
-
 .nav-btn {
   background: transparent;
-  color: var(--muted);
+  color: var(--text-secondary);
   border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 6px 12px;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: var(--font-sans);
   font-size: 14px;
   cursor: pointer;
+  min-height: 44px;                        /* 触控目标 ≥44px */
+  transition: color 150ms ease, background-color 150ms ease;
 }
-
 .nav-btn:hover { color: var(--text); }
+.nav-btn:active { background: var(--surface-muted); }
+.nav-btn.is-active { color: var(--text); background: var(--surface); border-color: var(--border); }
 
-.nav-btn.is-active {
-  color: var(--text);
-  background: var(--panel);
-  border-color: var(--border);
-}
-
-.main { max-width: 960px; margin: 0 auto; padding: 24px; }
-
-.page h2 {
-  margin-top: 0;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
-}
-
-.facts {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px 16px 16px 36px;
-}
-
-.facts li { margin: 6px 0; }
-
-.kv {
+/* ========== 7. 主容器与 Hero 双栏（左价值说明 / 右目录操作区） ========== */
+.main { max-width: 1120px; margin: 0 auto; padding: 32px 24px 48px; }
+.hero {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 6px 12px;
-  margin-top: 16px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);  /* 左略宽，避免标题挤压 */
+  gap: 48px;
+  align-items: start;
 }
-
-.kv dt { color: var(--muted); }
-.kv dd { margin: 0; font-family: Consolas, monospace; }
-
-.tip {
-  color: var(--muted);
-  background: var(--panel);
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  padding: 12px 16px;
+.hero-copy .hero-title {
+  font-size: clamp(28px, 3.2vw, 38px);
+  line-height: 1.35;
+  margin: 0 0 14px;
 }
-
-.hidden { display: none; }
-
-.badge-readonly {
-  display: inline-block;
-  vertical-align: middle;
-  color: var(--ok);
-  border: 1px solid var(--ok);
-  border-radius: 999px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: normal;
+.hero-sub { color: var(--text-secondary); font-size: 15px; margin: 0; max-width: 34em; }
+.hero-note { color: var(--text-secondary); font-size: 13px; margin: 6px 0 0; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0 0; }
+/* 目录操作区：真实扫描流程（路径输入 → 开始检查 → 轮询结果 → 错误状态） */
+.hero-work {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 20px 16px;
 }
+.hero-work h2 { font-size: 18px; margin: 0 0 2px; }
+.hero-work .desc { margin: 0 0 14px; color: var(--text-secondary); font-size: 13px; }
 
-.desc { color: var(--muted); }
-
-.form { margin: 16px 0; }
-
-.field { display: block; margin-bottom: 12px; }
-
-.field-label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
-
+/* ========== 8. 表单控件（语义清晰：待检查目录 / 开始检查） ========== */
+.form { margin: 0; }
+.field { display: block; margin: 0 0 12px; }
+.field-label { display: block; color: var(--text); font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.field-hint { margin: 0 0 8px; color: var(--text-secondary); font-size: 13px; }
 .input {
   width: 100%;
-  max-width: 640px;
-  background: var(--panel);
+  min-height: 44px;                        /* 触控目标 ≥44px */
+  background: var(--bg);                   /* 与面板表面形成差异，识别输入区域 */
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);           /* 路径为技术内容，等宽更易核对 */
   font-size: 14px;
-  font-family: Consolas, "Microsoft YaHei", monospace;
+  transition: border-color 150ms ease;
 }
+.input::placeholder { color: var(--placeholder); }
+.input:hover { border-color: var(--focus); }
+.input:focus { outline: 2px solid var(--focus); outline-offset: 2px; border-color: var(--focus); }
+.form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
-.form-actions { display: flex; align-items: center; gap: 12px; }
-
+/* ========== 9. 按钮（默认/悬停/按下/聚焦/禁用；无上浮动效） ========== */
 .btn {
-  background: var(--accent);
-  color: #0b1220;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 18px;
+  font-family: var(--font-sans);
   font-size: 14px;
+  font-weight: 600;
+  min-height: 44px;                        /* 触控目标 ≥44px */
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
   cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
+.btn:active { transform: scale(.97); }     /* 按下反馈：轻微缩放（非悬停上浮） */
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:disabled:active { transform: none; }
+.btn-primary { background: var(--primary); color: var(--primary-text); }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:active { background: var(--primary-hover); }
+.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { background: var(--surface-muted); }
+.btn-secondary:active { background: var(--surface-muted); }
 
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.state { color: var(--muted); font-size: 13px; }
-
+/* ========== 10. 状态反馈（加载 spinner / 错误提示 / 结果摘要） ========== */
+.state { color: var(--text-secondary); font-size: 13px; min-height: 20px; }
+.state.loading::before {                   /* 加载态转圈：唯一循环动画，仅状态反馈 */
+  content: "";
+  display: inline-block;
+  width: 12px; height: 12px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .error {
-  color: var(--err);
-  background: var(--panel);
-  border: 1px solid var(--err);
-  border-radius: 6px;
+  color: var(--danger);
+  background: var(--surface);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
   padding: 10px 14px;
-  margin: 12px 0;
+  margin: 12px 0 0;
+  font-size: 14px;
 }
-
+.scan-summary { font-size: 16px; margin: 14px 0 8px; }
 .list { margin: 8px 0 16px; padding-left: 22px; }
-
-.list li { margin: 4px 0; overflow-wrap: anywhere; }
-
+.list li { margin: 4px 0; overflow-wrap: anywhere; }   /* 长路径/内容不撑破窄屏 */
 .tag {
   display: inline-block;
   min-width: 52px;
   text-align: center;
-  color: #0b1220;
-  background: var(--warn);
+  color: var(--text);
+  background: var(--surface-muted);
   border-radius: 4px;
   padding: 0 6px;
+  font-family: var(--font-sans);
   font-size: 12px;
   margin-right: 6px;
 }
+.badge-readonly {
+  display: inline-block;
+  vertical-align: middle;
+  color: var(--success);
+  border: 1px solid var(--success);
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 12px;
+}
 
+/* ========== 11. R0-R3 状态区（统一对齐/细分隔/浅表面，不做厚重卡片） ========== */
+.levels { margin-top: 56px; }
+.levels .section-title { font-size: 22px; margin: 0 0 6px; }
+.levels .section-desc { color: var(--text-secondary); font-size: 14px; margin: 0 0 16px; }
+.level-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+.level {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.level:last-child { border-bottom: none; }
+.level-icon { flex: none; width: 22px; height: 22px; margin-top: 2px; }
+.level-body { min-width: 0; }
+.level-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.level-tag {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 0 6px;
+}
+.level-name { font-size: 15px; font-weight: 600; }
+.level-desc { margin: 4px 0 0; color: var(--text-secondary); font-size: 14px; }
+/* 图标与等级标记用状态色（文字+图标+颜色三通道）；说明文字始终次要色，保证可读 */
+.level-r0 { color: var(--success); }
+.level-r1 { color: var(--warning); }
+.level-r2 { color: var(--suggest); }
+.level-r3 { color: var(--danger); }
+
+/* ========== 12. 概览信息块（服务信息 / 安全承诺） ========== */
+.info-block { margin-top: 48px; }
+.info-block h2 { font-size: 20px; margin: 0 0 4px; }
+.kv { display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; margin-top: 12px; }
+.kv dt { color: var(--text-secondary); }
+.kv dd { margin: 0; font-family: var(--font-mono); }
+.facts {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px 14px 38px;
+  margin: 12px 0 0;
+}
+.facts li { margin: 4px 0; }
+.tip {
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.hidden { display: none; }
+
+/* ========== 13. 占位页标题与页脚 ========== */
+.page > h2 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  font-size: 22px;
+}
 .footer {
-  color: var(--muted);
+  color: var(--text-secondary);
   text-align: center;
   padding: 24px;
   font-size: 13px;
   border-top: 1px solid var(--border);
-  margin-top: 32px;
+  margin-top: 48px;
+}
+
+/* ========== 14. 响应式：1024 / 768 / 480（覆盖 390/320 手机） ========== */
+@media (min-width: 768px) {
+  /* 桌面/平板：R0-R3 两列 2×2，由可用宽度决定 */
+  .level-list { display: grid; grid-template-columns: 1fr 1fr; }
+  .level { border-bottom: 1px solid var(--border); }
+  .level:nth-child(odd) { border-right: 1px solid var(--border); }
+  .level:nth-child(n+3) { border-bottom: none; }
+}
+@media (max-width: 1024px) {
+  .hero { gap: 32px; }
+  .main { padding: 24px 20px 40px; }
+}
+@media (max-width: 768px) {
+  /* 窄屏：Hero 切单列（标题说明 → 目录操作 → R0-R3） */
+  .hero { grid-template-columns: 1fr; gap: 24px; }
+  .hero-copy .hero-title { font-size: clamp(24px, 6vw, 30px); }
+  .topbar { padding: 12px 16px; }
+  .nav { padding: 8px 12px; }
+  .kv { grid-template-columns: 96px 1fr; }
+}
+@media (max-width: 480px) {
+  /* 390/320 手机：按钮纵向排列不挤压，输入 100% 宽不横向滚动 */
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { width: 100%; }
+  .form-actions { flex-direction: column; align-items: stretch; }
+  .form-actions .btn { width: 100%; }
+  .topbar-actions { width: 100%; justify-content: space-between; }
+  .brand h1 { font-size: 18px; }
+  .hero-work { padding: 16px 14px 12px; }
+}
+
+/* ========== 15. 动效降级：prefers-reduced-motion（只停状态动效，不用 !important） ========== */
+@media (prefers-reduced-motion: reduce) {
+  body { transition: none; }
+  .btn, .nav-btn, .input { transition: none; }
+  .state.loading::before { animation: none; border-top-color: var(--text-secondary); }
 }

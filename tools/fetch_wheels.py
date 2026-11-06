@@ -11,6 +11,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+# 仅限纯 Python wheel（py3-none-any）：受限沙箱无编译器，且 pip 无法解包——
+# 依赖一律经本脚本下载并解压到 .deps2（AGENTS.md 环境说明；新增包须经创始人审查）
 PKGS = ["pytest", "colorama", "iniconfig", "packaging", "pluggy", "pygments"]
 ROOT = Path(__file__).resolve().parent.parent
 WHEELS = ROOT / ".wheels"
@@ -18,6 +20,7 @@ DEPS = ROOT / ".deps2"
 
 
 def fetch(url: str, retries: int = 3) -> bytes:
+    """带重试的下载（网络抖动容错）；超时 60s。"""
     last: Exception | None = None
     for attempt in range(retries):
         try:

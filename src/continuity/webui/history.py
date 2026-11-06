@@ -42,6 +42,7 @@ class HistoryStore:
         self._lock = threading.Lock()
 
     def append(self, record: Dict[str, Any]) -> None:
+        # 单进程内多线程（server 请求线程）可能并发追加：锁保证 JSONL 行不交错
         with self._lock:
             with self.path.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")

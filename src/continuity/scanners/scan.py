@@ -73,6 +73,7 @@ def _structural_findings(path: Path, rel: str, kind: FileKind, size: int) -> Lis
             )
         )
     if kind is FileKind.TEXT:
+        # errors="replace"：非 UTF-8 字节解码后不会以 { 开头，天然不会误入本分支
         with path.open("rb") as f:
             head = f.read(1024).decode("utf-8", errors="replace").lstrip()
         if head.startswith("{"):
@@ -108,6 +109,7 @@ def scan_directory(root: Path, limits: ResourceLimits = DEFAULT_LIMITS) -> ScanR
     total_bytes = 0
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         dir_p = Path(dirpath)
+        # 深度上限：防深层嵌套目录消耗资源（与文件数/字节上限同为统一预算）
         depth = len(dir_p.relative_to(root).parts)
         if depth > limits.max_depth:
             raise ScanError(f"目录深度超过上限 {limits.max_depth}: {dir_p}")
@@ -115,6 +117,7 @@ def scan_directory(root: Path, limits: ResourceLimits = DEFAULT_LIMITS) -> ScanR
         kept: List[str] = []
         for name in dirnames:
             child = dir_p / name
+            # 符号链接目录只记录不跟随：避免环与逃逸（规则 1：只读、可控边界）
             if child.is_symlink():
                 report.skipped_symlinks.append(child.relative_to(root).as_posix())
             else:
@@ -141,6 +144,8 @@ def scan_directory(root: Path, limits: ResourceLimits = DEFAULT_LIMITS) -> ScanR
                 sha = sha256_file(path)
                 kind = identify_file(path)
             except OSError as exc:
+                # 单文件失败不中断整次扫描：记录 ERROR 发现继续（0.1.2 起，
+                # 此类文件进入 unprocessed 清单并置 coverage 不完整）
                 report.findings.append(
                     ScanFinding(
                         file=rel,

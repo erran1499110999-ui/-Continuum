@@ -20,7 +20,9 @@ from ..pngutil import read_png_info_stream
 
 CHARA_KEY = "chara"
 
-# 角色卡已知字段（V1 平铺 / V2 data 内通用）
+# 角色卡已知字段（V1 平铺 / V2 data 内通用）。
+# 作用有二：解析时按字段映射到 ParsedCard；导出与未知字段分离时作为白名单——
+# 不在本清单内的键一律进 unknown_keys/sidecar，绝不静默丢弃（规则 9）。
 CARD_FIELDS = (
     "name",
     "description",
@@ -67,6 +69,7 @@ class ParsedCard:
 
 
 def _split_unknown(data: Dict[str, Any]) -> List[str]:
+    # 排序输出：未知字段清单进入报告/sidecar，顺序稳定便于 diff 与审查
     return sorted(k for k in data if k not in CARD_FIELDS)
 
 
@@ -107,7 +110,11 @@ def parse_card_dict(raw: Dict[str, Any]) -> ParsedCard:
 
 
 def export_card_v2(card: ParsedCard) -> Dict[str, Any]:
-    """标准化导出为 Character Card V2 结构；未知字段原样保留在 data 内。"""
+    """标准化导出为 Character Card V2 结构；未知字段原样保留在 data 内。
+
+    关键点：data 以 raw 为基础覆盖已知字段——未知字段随 raw 原样带出，
+    实现「标准字段被规范化、其余字节级结构不被丢弃」的迁移目标。
+    """
     data: Dict[str, Any] = dict(
         card.raw.get("data", {}) if card.format_version == "v2" else card.raw
     )
@@ -150,6 +157,7 @@ def parse_card_file(
         if not payload:
             raise AdapterError(f"PNG 角色卡缺少 {CHARA_KEY!r} 块内容: {path}")
         try:
+            # validate=True：严格拒绝含非 base64 字符的 payload（损坏检测，规则 9）
             raw = json.loads(base64.b64decode(payload, validate=True))
         except (ValueError, json.JSONDecodeError) as exc:
             raise AdapterError(f"PNG 角色卡 chara 块解析失败: {path}（{exc}）") from exc
@@ -191,6 +199,7 @@ def parse_chat_jsonl(
                 raise AdapterError(
                     f"聊天文件超过行数上限 {limits.max_chat_lines}: {path}"
                 )
+            # 只剥行结束符（\r\n 或 \n），保留行内空白——坏行索引要求字节级忠实（0.1.3）
             line = raw_line.rstrip(b"\r\n")
             stripped = line.strip()
             if not stripped:
@@ -221,7 +230,7 @@ def serialize_chat(chat: ParsedChat) -> str:
 
 
 def looks_like_world_info(obj: Any) -> bool:
-    """结构特征判断：World Info / Lorebook 的最低可验证结构。"""
+    """结构特征判断：World Info / Lorebook 的最低可验证结构（规则 9：不猜字段）。"""
     return (
         isinstance(obj, dict)
         and isinstance(obj.get("entries"), dict)

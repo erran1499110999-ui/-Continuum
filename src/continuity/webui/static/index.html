@@ -8,17 +8,24 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+<!-- 注意：服务端 CSP 禁止内联样式与内联脚本，全部样式见 /static/style.css，逻辑见 /static/app.js -->
+
+<!-- ============ 顶栏：品牌 + 主题切换 + 本机承诺 ============ -->
 <header class="topbar">
   <div class="brand">
     <h1>Continuity Studio</h1>
-    <p class="sub">本地优先的 AI 角色备份、诊断、修复与迁移工具（开发预览 · 阶段 W1）</p>
+    <p class="sub">本地优先的 AI 角色备份、诊断、修复与迁移工具</p>
   </div>
-  <div class="pledge">仅在本机 127.0.0.1 运行 · 不上传任何角色数据</div>
+  <div class="topbar-actions">
+    <span class="pledge">仅在本机 127.0.0.1 运行 · 不上传任何角色数据</span>
+    <!-- 主题切换：文字随状态变化（如当前浅色显示"深色主题"），aria-pressed 由 JS 维护 -->
+    <button type="button" id="theme-toggle" class="btn btn-secondary" aria-pressed="false">深色主题</button>
+  </div>
 </header>
 
+<!-- ============ 功能导航（扫描已并入首页操作区，其余入口保留） ============ -->
 <nav id="nav" class="nav" aria-label="功能导航">
   <button type="button" data-page="overview" class="nav-btn is-active">概览</button>
-  <button type="button" data-page="scan" class="nav-btn">扫描</button>
   <button type="button" data-page="backup" class="nav-btn">备份</button>
   <button type="button" data-page="verify" class="nav-btn">校验</button>
   <button type="button" data-page="restore" class="nav-btn">恢复</button>
@@ -28,47 +35,100 @@
 </nav>
 
 <main id="main" class="main">
+  <!-- ============ 概览页 = 产品首页：Hero 双栏 + R0-R3 + 服务信息 ============ -->
   <section id="page-overview" class="page">
-    <h2>概览</h2>
-    <ul class="facts">
-      <li>源目录全程只读；修复、恢复、迁移只写入新目录，绝不覆盖现有数据。</li>
-      <li>默认不上传角色卡、聊天记录、图片、附件或密钥；服务仅监听 127.0.0.1。</li>
-      <li>不执行导入文件中的脚本、宏、HTML 或扩展代码（R3 隔离）。</li>
-      <li>修复分级如实呈现：R0 自动修复 / R2 仅建议 / R3 隔离；R1 待真实样本设计。</li>
-    </ul>
-    <dl class="kv">
-      <dt>工具</dt><dd id="info-tool">加载中…</dd>
-      <dt>版本</dt><dd id="info-version">加载中…</dd>
-      <dt>服务状态</dt><dd id="info-health">加载中…</dd>
-      <dt>运行端口</dt><dd id="info-port">—</dd>
-    </dl>
-    <p class="tip">当前进度：概览与扫描已可用（W1–W2）；备份、校验、恢复、修复预览、迁移、历史日志页面将在 W3–W7 逐阶段开放。</p>
-  </section>
-
-  <section id="page-scan" class="page hidden">
-    <h2>扫描 <span class="badge-readonly">只读操作</span></h2>
-    <p class="desc">只读扫描目录：文件类型统计、结构发现与建议、内容重复文件组、跳过符号链接清单。源目录绝不会被修改。</p>
-    <form id="scan-form" class="form">
-      <label class="field" for="scan-source">
-        <span class="field-label">源目录（只读输入）</span>
-        <input type="text" id="scan-source" class="input" placeholder="例如 D:\data\sillytavern\data">
-      </label>
-      <div class="form-actions">
-        <button type="submit" id="scan-run" class="btn">开始扫描</button>
-        <span id="scan-state" class="state"></span>
+    <div class="hero">
+      <!-- 左栏：产品价值说明（中文主标题宋体系 + 简短英文副标识） -->
+      <div class="hero-copy">
+        <h2 class="hero-title">让每段故事，<br>都能安心回家</h2>
+        <p class="hero-sub">扫描、备份、诊断、修复与迁移你的 AI 角色数据——全程在你的电脑上完成，原始文件只读，任何修复都写入新目录。</p>
+        <p class="hero-note">Continuity Studio — a safe home for every story.</p>
+        <div class="hero-actions">
+          <button type="button" id="hero-start" class="btn btn-primary">开始检查</button>
+          <button type="button" id="hero-levels" class="btn btn-secondary">了解修复等级</button>
+        </div>
       </div>
-    </form>
-    <div id="scan-error" class="error hidden"></div>
-    <div id="scan-result" class="hidden">
-      <h3 id="scan-summary"></h3>
-      <h4>类型统计</h4>
-      <ul id="scan-kinds" class="list"></ul>
-      <h4>发现（<span id="scan-findings-count">0</span> 项）</h4>
-      <ul id="scan-findings" class="list"></ul>
-      <h4>内容重复文件组（<span id="scan-duplicates-count">0</span> 组）</h4>
-      <ul id="scan-duplicates" class="list"></ul>
-      <h4>跳过符号链接（<span id="scan-symlinks-count">0</span> 个）</h4>
-      <ul id="scan-symlinks" class="list"></ul>
+      <!-- 右栏：目录操作区（真实扫描流程：路径输入 → 开始检查 → 轮询结果 → 错误状态） -->
+      <div class="hero-work">
+        <h2>目录检查 <span class="badge-readonly">只读检查</span></h2>
+        <p class="desc">输入或粘贴 SillyTavern 数据目录，进行只读扫描与体检；只读取文件信息与结构，绝不修改任何内容。</p>
+        <form id="scan-form" class="form">
+          <label class="field" for="scan-source">
+            <span class="field-label">待检查目录</span>
+            <span class="field-hint">可输入或粘贴完整路径，例如 D:\data\SillyTavern\data</span>
+            <input type="text" id="scan-source" class="input" placeholder="D:\data\SillyTavern\data" autocomplete="off" spellcheck="false">
+          </label>
+          <div class="form-actions">
+            <button type="submit" id="scan-run" class="btn btn-primary">开始检查</button>
+            <span id="scan-state" class="state" role="status"></span>
+          </div>
+        </form>
+        <div id="scan-error" class="error hidden" role="alert"></div>
+        <div id="scan-result" class="hidden" aria-live="polite">
+          <h3 id="scan-summary" class="scan-summary"></h3>
+          <h4>类型统计</h4>
+          <ul id="scan-kinds" class="list"></ul>
+          <h4>发现（<span id="scan-findings-count">0</span> 项）</h4>
+          <ul id="scan-findings" class="list"></ul>
+          <h4>内容重复文件组（<span id="scan-duplicates-count">0</span> 组）</h4>
+          <ul id="scan-duplicates" class="list"></ul>
+          <h4>跳过符号链接（<span id="scan-symlinks-count">0</span> 个）</h4>
+          <ul id="scan-symlinks" class="list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- R0-R3 状态区：统一对齐 + 细分隔 + 浅表面；文字+图标+颜色三通道 -->
+    <div class="levels" id="levels">
+      <h2 class="section-title">修复等级说明</h2>
+      <p class="section-desc">检查结果按可信度分为四个等级：图标形状、文字标签与颜色同时承载含义，色弱也能区分。</p>
+      <ul class="level-list">
+        <li class="level level-r0">
+          <svg class="level-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-5"/></svg>
+          <div class="level-body">
+            <div class="level-head"><span class="level-tag">R0</span><span class="level-name">自动修复</span></div>
+            <p class="level-desc">确定性修复：依据明确规则，自动生成修复副本。</p>
+          </div>
+        </li>
+        <li class="level level-r1">
+          <svg class="level-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.2"/><path d="M12 15.8h.01"/></svg>
+          <div class="level-body">
+            <div class="level-head"><span class="level-tag">R1</span><span class="level-name">需确认</span></div>
+            <p class="level-desc">可推断修复：有证据但不唯一，必须由你确认后执行。</p>
+          </div>
+        </li>
+        <li class="level level-r2">
+          <svg class="level-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2h5.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>
+          <div class="level-body">
+            <div class="level-head"><span class="level-tag">R2</span><span class="level-name">仅建议</span></div>
+            <p class="level-desc">无法可靠恢复：不伪造数据，只给出人工建议。</p>
+          </div>
+        </li>
+        <li class="level level-r3">
+          <svg class="level-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+          <div class="level-body">
+            <div class="level-head"><span class="level-tag">R3</span><span class="level-name">隔离</span></div>
+            <p class="level-desc">不安全或不支持的内容：隔离处理，绝不执行。</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 服务信息与安全承诺（真实功能描述，不夸大） -->
+    <div class="info-block">
+      <h2>服务信息</h2>
+      <dl class="kv">
+        <dt>工具</dt><dd id="info-tool">加载中…</dd>
+        <dt>版本</dt><dd id="info-version">加载中…</dd>
+        <dt>服务状态</dt><dd id="info-health">加载中…</dd>
+        <dt>运行端口</dt><dd id="info-port">—</dd>
+      </dl>
+      <ul class="facts">
+        <li>源目录全程只读；修复、恢复、迁移只写入新目录，绝不覆盖现有数据。</li>
+        <li>默认不上传角色卡、聊天记录、图片、附件或密钥；服务仅监听 127.0.0.1。</li>
+        <li>不执行导入文件中的脚本、宏、HTML 或扩展代码（R3 隔离）。</li>
+        <li>修复分级如实呈现：R0 自动修复 / R1 需确认 / R2 仅建议 / R3 隔离。</li>
+      </ul>
     </div>
   </section>
 
@@ -103,7 +163,7 @@
   </section>
 </main>
 
-<footer class="footer">Continuity Studio · 本地优先 · 数据不出本机</footer>
+<footer class="footer">Continuity Studio · 本地优先 · 数据不出本机 · Local-first. Your data never leaves this machine.</footer>
 
 <script src="/static/app.js"></script>
 </body>

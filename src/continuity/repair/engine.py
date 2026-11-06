@@ -114,11 +114,13 @@ def apply_repairs(source_dir: Path, output_dir: Path) -> RepairReport:
                         }
                     )
                     if fix.diff:
+                        # 差异文件按 rel_path 展平命名（"/" → "__"），避免输出目录嵌套
                         diffs_dir.mkdir(exist_ok=True)
                         (diffs_dir / (sf.rel_path.replace("/", "__") + ".diff")).write_text(
                             fix.diff, encoding="utf-8"
                         )
             else:
+                # 无修复动作的文件（非文本/超限/无规则命中）：原样字节复制，绝不改动
                 shutil.copy2(src, dst)
 
         repaired_files = {f["file"] for f in report.fixes}

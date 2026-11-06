@@ -71,12 +71,14 @@ def safe_join(base: Path, rel_path: str) -> Path:
     """
     if rel_path in ("", "."):
         raise BackupError(f"拒绝不安全的相对路径: {rel_path!r}")
+    # POSIX 语义拆分：\ 不参与分段，因此 Windows 反斜杠只能藏在段内，由下面循环逐段拒绝
     parts = PurePosixPath(rel_path)
     if parts.is_absolute() or ".." in parts.parts:
         raise BackupError(f"拒绝不安全的相对路径: {rel_path!r}")
     for part in parts.parts:
         if "\\" in part or ":" in part or "\x00" in part:
             raise BackupError(f"拒绝不安全的相对路径: {rel_path!r}")
+    # resolve 二次校验：即使以上全过，若中间目录是符号链接可把目标带出 base，此处兜底拦截
     base_res = base.resolve()
     target = base_res / Path(*parts.parts)
     if not target.resolve(strict=False).is_relative_to(base_res):
@@ -189,6 +191,7 @@ def create_backup(
                     )
                 dst = bundle / FILES_DIR_NAME / Path(*PurePosixPath(rel).parts)
                 dst.parent.mkdir(parents=True, exist_ok=True)
+                # 竞态防线：复制+哈希单次读取完成，前后 stat 签名比对捕捉期间变化
                 sig_before = _stat_signature(src)
                 try:
                     copied, sha = _copy_and_hash(src, dst)
@@ -265,6 +268,8 @@ def restore_backup(
         if src.stat().st_size != entry.size:
             raise BackupError(f"文件大小与清单不符: {entry.rel_path}")
 
+    # staging 与 dest 同父目录且命名固定（dest.name + ".restoring"）：
+    # 保证 staging.replace(dest) 是同卷原子改名，不会产生跨盘复制
     staging = dest.with_name(dest.name + ".restoring")
     if staging.exists():
         raise BackupError(f"临时恢复目录已存在，请先处理: {staging}")

@@ -8,6 +8,10 @@
   continuity repair <源目录> <输出目录>    只读诊断并生成修复副本（R0 自动修复）
   continuity migrate <源目录> <输出目录>   SillyTavern 迁移并逐项验证
   continuity version                       显示版本号
+
+薄壳原则：CLI 只做参数解析与结果打印，业务与安全逻辑全部在引擎层；
+退出码约定：0=成功；1=完成但不完整（迁移覆盖率不完整，0.1.3 起）；
+2=失败（引擎错误/用法错误，错误文案来自引擎、面向用户）。
 """
 
 from __future__ import annotations
@@ -181,6 +185,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     try:
         return _run(args)
     except (BackupError, RepairError, MigrationError, ScanError, OSError) as exc:
+        # 引擎异常文案已面向用户，直接透传；OSError 覆盖文件系统级意外（权限/占用等）
         print(f"错误: {exc}", file=sys.stderr)
         return 2
 

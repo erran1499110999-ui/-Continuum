@@ -59,6 +59,7 @@ def identify_file(path: Path) -> FileKind:
             return FileKind.CHARACTER_CARD_PNG
         return FileKind.PNG
 
+    # 头部含 NUL 即二进制：文本编码几乎不可能包含 NUL（识别依据见 format-compatibility.md）
     if b"\x00" in head:
         return FileKind.BINARY
 
@@ -68,6 +69,7 @@ def identify_file(path: Path) -> FileKind:
     try:
         decoded = text.decode("utf-8")
     except UnicodeDecodeError:
+        # 非 UTF-8 视作二进制：当前版本不猜测编码（UTF-16/GBK 识别待扩展，见已知限制）
         return FileKind.BINARY
 
     stripped = decoded.lstrip()
@@ -77,6 +79,7 @@ def identify_file(path: Path) -> FileKind:
         except json.JSONDecodeError:
             pass
         else:
+            # 卡判定只查结构特征（规则 9）：V1 平铺卡有 name+first_mes；V2 包裹卡以 spec 开头
             if isinstance(obj, dict) and (
                 _CARD_KEYS.issubset(obj.keys())
                 or (
@@ -88,6 +91,7 @@ def identify_file(path: Path) -> FileKind:
             return FileKind.JSON
 
     # JSONL：抽样前若干非空行，多数为合法 JSON 即判定（容忍个别损坏行）
+    # 启发式边界：至少 2 行合法且占比过半，避免把普通文本误判为聊天记录
     lines = [ln for ln in decoded.splitlines() if ln.strip()]
     if lines:
         sample = lines[:_JSONL_SAMPLE_LINES]

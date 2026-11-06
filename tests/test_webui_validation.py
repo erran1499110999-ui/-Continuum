@@ -89,6 +89,7 @@ def test_require_new_output_dir_sibling_ok(tmp_path):
 
 
 # —— host_is_allowed ——
+# 白名单语义：只放行本机回环主机名（任意端口）；其余一律拒绝（防 DNS rebinding）
 
 @pytest.mark.parametrize(
     "host",

@@ -26,7 +26,7 @@ class RepairLevel(str, enum.Enum):
     """修复等级（企划书 5.4）。"""
 
     R0 = "r0"  # 确定性修复：依据明确规则，可自动生成修复副本
-    R1 = "r1"  # 可推断修复：有证据但不唯一，必须用户确认
+    R1 = "r1"  # 可推断修复：有证据但不唯一，必须用户确认（规则尚未实现，待真实样本设计）
     R2 = "r2"  # 人工处理：缺失内容无可靠来源，只给建议
     R3 = "r3"  # 不安全/不支持：隔离，不执行
 
@@ -76,7 +76,11 @@ class ManifestEntry(BaseModel):
     @field_validator("rel_path")
     @classmethod
     def _validate_rel_path(cls, v: str) -> str:
-        """要求唯一、规范的 POSIX 相对路径：拒绝空段、.、..、绝对路径、盘符、反斜杠与首尾空白。"""
+        """要求唯一、规范的 POSIX 相对路径：拒绝空段、.、..、绝对路径、盘符、反斜杠与首尾空白。
+
+        这是路径穿越的第一道防线：清单数据可能来自外部（备份包可被他人制作/篡改），
+        必须在 schema 层就封死恶意路径，后续引擎层还有 resolve 二次校验兜底。
+        """
         if v != v.strip() or v.endswith("/") or v.startswith("/") or "\\" in v:
             raise ValueError(f"非规范的相对路径: {v!r}")
         parts = v.split("/")
@@ -112,6 +116,7 @@ class BundleManifest(BaseModel):
             )
         rels = [e.rel_path for e in self.entries]
         if len(rels) != len(set(rels)):
+            # 重复 rel_path 会让恢复阶段互相覆盖、哈希校验对象歧义——schema 层直接拒绝
             raise ValueError("清单中存在重复的 rel_path")
         return self
 

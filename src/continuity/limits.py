@@ -13,6 +13,8 @@ GIB = 1024 ** 3
 
 @dataclass(frozen=True)
 class ResourceLimits:
+    """全部命令共享的硬上限；超限即失败并给出明确报告，绝不输出貌似完整的结果。"""
+
     max_file_bytes: int = 256 * MIB  # 单文件上限
     max_total_bytes: int = 2 * GIB  # 累计字节上限
     max_files: int = 100_000  # 文件数上限
