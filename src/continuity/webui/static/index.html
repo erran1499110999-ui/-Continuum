@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="continuity-token" content="__CONTINUITY_TOKEN__">
+<title>Continuity Studio · 本地工作台</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <h1>Continuity Studio</h1>
+    <p class="sub">本地优先的 AI 角色备份、诊断、修复与迁移工具（开发预览 · 阶段 W1）</p>
+  </div>
+  <div class="pledge">仅在本机 127.0.0.1 运行 · 不上传任何角色数据</div>
+</header>
+
+<nav id="nav" class="nav" aria-label="功能导航">
+  <button type="button" data-page="overview" class="nav-btn is-active">概览</button>
+  <button type="button" data-page="scan" class="nav-btn">扫描</button>
+  <button type="button" data-page="backup" class="nav-btn">备份</button>
+  <button type="button" data-page="verify" class="nav-btn">校验</button>
+  <button type="button" data-page="restore" class="nav-btn">恢复</button>
+  <button type="button" data-page="repair" class="nav-btn">修复预览</button>
+  <button type="button" data-page="migrate" class="nav-btn">迁移</button>
+  <button type="button" data-page="history" class="nav-btn">历史日志</button>
+</nav>
+
+<main id="main" class="main">
+  <section id="page-overview" class="page">
+    <h2>概览</h2>
+    <ul class="facts">
+      <li>源目录全程只读；修复、恢复、迁移只写入新目录，绝不覆盖现有数据。</li>
+      <li>默认不上传角色卡、聊天记录、图片、附件或密钥；服务仅监听 127.0.0.1。</li>
+      <li>不执行导入文件中的脚本、宏、HTML 或扩展代码（R3 隔离）。</li>
+      <li>修复分级如实呈现：R0 自动修复 / R2 仅建议 / R3 隔离；R1 待真实样本设计。</li>
+    </ul>
+    <dl class="kv">
+      <dt>工具</dt><dd id="info-tool">加载中…</dd>
+      <dt>版本</dt><dd id="info-version">加载中…</dd>
+      <dt>服务状态</dt><dd id="info-health">加载中…</dd>
+      <dt>运行端口</dt><dd id="info-port">—</dd>
+    </dl>
+    <p class="tip">当前为阶段 W1 骨架：概览页与健康/版本接口已可用；扫描、备份、校验、恢复、修复预览、迁移、历史日志页面将在 W2–W7 逐阶段开放。</p>
+  </section>
+
+  <section id="page-scan" class="page hidden">
+    <h2>扫描</h2>
+    <p class="tip">只读扫描目录：类型统计、结构发现、重复文件（阶段 W2 开放）。</p>
+  </section>
+
+  <section id="page-backup" class="page hidden">
+    <h2>备份</h2>
+    <p class="tip">创建本地备份包（源目录只读，绝不修改）（阶段 W3 开放）。</p>
+  </section>
+
+  <section id="page-verify" class="page hidden">
+    <h2>校验</h2>
+    <p class="tip">备份包完整性检查（阶段 W3 开放）。</p>
+  </section>
+
+  <section id="page-restore" class="page hidden">
+    <h2>恢复</h2>
+    <p class="tip">恢复到新目录并逐文件校验哈希（阶段 W4 开放）。</p>
+  </section>
+
+  <section id="page-repair" class="page hidden">
+    <h2>修复预览</h2>
+    <p class="tip">只读诊断并生成修复副本：R0 自动修复 + diff、R2 仅建议、R3 隔离（阶段 W5 开放）。</p>
+  </section>
+
+  <section id="page-migrate" class="page hidden">
+    <h2>迁移</h2>
+    <p class="tip">SillyTavern 迁移：解析 → 标准化导出 → 逐项验证报告（阶段 W6 开放）。</p>
+  </section>
+
+  <section id="page-history" class="page hidden">
+    <h2>历史日志</h2>
+    <p class="tip">本地操作历史与运行日志（阶段 W7 开放）。</p>
+  </section>
+</main>
+
+<footer class="footer">Continuity Studio · 本地优先 · 数据不出本机</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

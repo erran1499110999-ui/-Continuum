@@ -25,6 +25,38 @@
 
 任何成员如需改动**他人写作用域内**的文件（尤其是现有核心模块），必须先在其计划中标注「需创始人协调」，经创始人裁决后方可执行。
 
+## 写作用域约定（第二轮，创始人 2026-11-06 已裁决）
+
+| 成员 | 本轮写作用域 |
+|------|-------------|
+| developer | `src/continuity/webui/`（全新目录）+ `tests/test_webui_server.py`、`tests/test_webui_jobs.py`、`tests/test_webui_validation.py`（全新文件，创始人已批准「方案甲」：tests/ 下新增、绝不改旧文件） |
+| qa-reviewer | `docs/acceptance-checklist.md`（0.1.3 增量复核修订） |
+| researcher | 本轮待命 |
+| 外部开发者会话 | 创始人裁决：由其负责 SillyTavern V3/CHARX/1.12+ 布局兼容性更新（`src/continuity/adapters/` 等核心代码），输入文档 `docs/research-sillytavern.md` 第 9 节 P0 清单 |
+
+已裁决的技术决策：Web UI 技术栈 = **方案 A（纯标准库 ThreadingHTTPServer + 无构建原生 JS，零新增依赖）**；入口 `python -m continuity.webui`；默认端口 8765；历史记录 `.tmp/webui-history.jsonl`（正式回退 %LOCALAPPDATA%）。
+
+## 写作用域约定（第三轮，W2：创始人已验收 W1 并授权）
+
+| 成员 | 本轮写作用域 |
+|------|-------------|
+| developer | `src/continuity/webui/`（继续，新增扫描页 + `POST /api/jobs/scan` 端点）+ `tests/test_webui_api_scan.py`（全新文件，方案甲） |
+| qa-reviewer | `docs/w2-acceptance.md`（W2 独立审核） |
+| researcher | 待命（可按需深挖 SillyTavern 样本验证，不写代码） |
+| 外部开发者会话 | 继续 V3/CHARX/1.12+ 兼容性更新（核心代码），与本团队 webui 无重叠 |
+
+## 创始人新指令（2026-11-06 22:48，自 W2 起生效）
+
+1. **三轮审核制**：developer 每完成一次大任务（一个 W 阶段）→ qa-reviewer 三轮独立审核：
+   - 第 1 轮「功能与真实测试」：真实运行全套 pytest、与计划/CLI 等价性、无删测试/降断言/硬编码；
+   - 第 2 轮「安全与十规则审计」：攻击者视角（路径穿越、资源上限、密钥/聊天内容日志泄漏、执行导入内容、错误路径），对应企划书提示词 9；
+   - 第 3 轮「回归与发布审查」：全量回归、写作用域与 git 核对、文档与变更清单、占位功能排查，对应提示词 10。
+   每轮发现问题退回 developer 修改后复审；三轮全过才提交创始人验收。
+2. **GitHub 按阶段上传**：每阶段创始人验收通过后，按阶段推送到 `https://github.com/erran1499110999-ui/-Continuum.git`（origin 已配置）。推送凭据仅存环境变量/凭据管理器，绝不写入源码或日志。
+3. **仓库产品描述中英文双语**：README.md 等对外产品描述需中英双语。README 更新涉及外部开发者写作用域，须创始人协调排期。
+4. **企划书变更跟踪**：基线 = `docs/plan-docx-text.txt`（提取自创始人 docx 原件，与 `_docx_text.txt` 内容一致）。创始人更新企划书后，lead 重新提取并与基线 diff，把变更同步到任务与本文档。
+5. **调研者社区调研**：可对 X（Twitter）、Reddit、百度贴吧等社区做真实产品调研；优先公开渠道（无需登录的公开页面/帖子，只读、不发言、不刷屏）；如需登录凭据由创始人提供，仅存环境变量，只读使用。
+
 ## 通用约定
 
 1. 每次开工前重读 AGENTS.md（可能被其他会话更新）。
