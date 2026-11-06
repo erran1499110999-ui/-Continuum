@@ -1,0 +1,49 @@
+/* Continuity 体检（P1 骨架）：徽标与空面板的最小样式。P4 随 UI 设计系统统一打磨。 */
+
+.continuity-check-badge {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 9999;
+  background: #1a2129;
+  color: #e6edf3;
+  border: 1px solid #2c3642;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.continuity-check-badge:hover {
+  border-color: #4f9cf9;
+}
+
+.continuity-check-panel {
+  position: fixed;
+  right: 12px;
+  bottom: 48px;
+  z-index: 9999;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  background: #101418;
+  color: #e6edf3;
+  border: 1px solid #2c3642;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
+.continuity-check-title {
+  font-weight: bold;
+  border-bottom: 1px solid #2c3642;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.continuity-check-body {
+  line-height: 1.6;
+}
+
+.hidden {
+  display: none;
+}

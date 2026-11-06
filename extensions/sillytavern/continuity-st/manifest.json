@@ -1,0 +1,14 @@
+{
+  "manifest_version": 1,
+  "display_name": "Continuity 体检",
+  "loading_order": 100,
+  "requires": [],
+  "optional": false,
+  "js": "index.js",
+  "css": "style.css",
+  "author": "Continuity Studio",
+  "version": "0.1.0",
+  "homePage": "https://github.com/erran1499110999-ui/-Continuum",
+  "license": "MIT",
+  "minimum_client_version": "1.12.0"
+}
