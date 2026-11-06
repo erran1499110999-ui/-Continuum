@@ -43,11 +43,57 @@
   许可证与依赖清单）；qa-reviewer 第 3 轮发布审查时逐条核对「声明与实现一致」。受益 agent：lead（排期）、
   researcher（初稿）、qa-reviewer（核对）。
 
+## 批次 2（2026-11-07）
+
+| # | 类别 | 条目 | 来源+日期 | 用途 | 许可证 | 可落地动作 | 优先级 | 受益 agent |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 工具/技能 | **备份完整性验证与灾难恢复技能**（SHA-256 manifest + 恢复演练工作流，restic/borg/rclone 对照） | [skill 文档](https://raw.githubusercontent.com/NeverSight/skills_feed/refs/heads/main/data/skills-md/mukul975/anthropic-cybersecurity-skills/validating-backup-integrity-for-recovery/SKILL.md)（2026-04） | W3 备份/校验模块的验证步骤设计参照（与我们的 manifest 设计同构） | 文档 | qa/developer 把「恢复演练」步骤纳入 W3 验收（恢复后逐文件哈希比对已在提示词 4） | 中 | qa-reviewer / developer |
+| 2 | 字体资源 | **Noto Serif SC（思源宋体）**：中文标题宋体系 vendoring 候选 | [Google Fonts](https://fonts.google.com/noto/specimen/Noto+Serif+SC) | brief 四：中文标题宋体系；未 vendoring 用系统回退 | OFL | **只记录建议与许可证需求，本轮不下载**（brief 四）；经创始人许可证流程批准后再 vendoring | 中 | frontend-developer |
+| 3 | 工具/运维 | **MCPBundles《MCP Server Examples》**：官方参考服务器（Everything/Fetch/Filesystem/Git/Memory/Sequential Thinking/Time）与厂商服务器单命令启动清单 | [mcpbundles.com](https://www.mcpbundles.com/guides/mcp-server-examples)（2026-10-19） | lead 配置 MCP 时的权威对照清单（resource-map Top 5 的落地参考） | 文档 | 创始人批准 MCP 后按此清单逐项启动与授权目录 | 中 | lead |
+| 4 | 技术情报 | **ST 1.19.0 已合并的完整性修复**（#5458 首行损坏静默覆盖、#5944 CJK 备份键、#5980 覆盖前快照） | [releases/latest](https://github.com/SillyTavern/SillyTavern/releases/latest) | 案例库 P0 多条上游已修复——引擎检测项应维护「上游已修复版本」标注，告警话术按用户 ST 版本区分 | AGPL（上游仓库） | developer/外部会话在引擎告警话术中区分「旧版易发」与「新版已修复」，避免对 1.19+ 用户过度恐吓 | 高 | developer / 外部会话 |
+| 5 | 设计参考 | **Someclaudeskills web_design_expert 布局参考**（8px 间距基、断点 640/768/1024/1280、12 列网格决策树） | [someclaudeskills.com](https://someclaudeskills.com/docs/skills/web_design_expert/references/layout-systems/) | 布局系统通用参考（brief 未指定间距基，此仅作建议） | 文档 | frontend 在 brief 允许范围内参考间距与断点惯例 | 低 | frontend-developer |
+| 6 | 开源组件 | **Caho1/open-claude-ui 零 JS 滚动消隐遮罩**（`[data-cds-scroll-fade]`，@property 驱动） | [GitHub](https://github.com/Caho1/open-claude-ui)（2026-10） | 长列表/报告页滚动渐隐的纯 CSS 实现参考（不引包） | 待核实 | 仅参考实现思路自研（与 brief「不新增装饰动画」不冲突：属状态反馈） | 低 | frontend-developer |
+
+## 发散主题轮转（每批 1 篇：深挖一个角度 → 一条可落地建议 + 受益 agent）
+
+### 第 1 篇｜增长与分发（2026-11-07）
+- 观察：ST 生态的分发事实——官方内容库（申请制）+ 内置安装器 URL + Discord/Reddit 求助场景 +
+  中文社区（贴吧/NGA）的「教程渴求」；竞品 Foreverse/TavernAI 2 都在用「迁移教程文」获客。
+- 结论：本项目最短分发路径不是广告，而是**「可被搜索的教程内容」**：把 failure-case-library 的
+  真实场景改写成「升级前自查清单」「白屏抢救手册」「误删找回五步」三类双语内容页（先于产品功能发布，
+  仅链接到 GitHub）。
+- **可落地建议（1 条）**：lead 排期一个「内容页任务」（docs 输出 + README 链接），researcher 提供
+  文案（复用 marketing-copy 模板 A/C），发布到 GitHub Pages/仓库 wiki 后由社区渠道分发——内容资产
+  先于插件上线，为 T1 引流蓄水。受益 agent：lead（排期）/ researcher（文案）/ frontend-developer（页面）。
+- **⚠ 状态更新（2026-11-07）**：投放已冻结（规则 13）。本篇内容页建议仅限「内容创作」，发布与否
+  属投放动作，须待市场验证并经创始人确认后执行（见 plugin-market-validation.md §6）。
+
+### 第 2 篇｜合规与隐私（2026-11-07）
+- 观察：本地优先产品「不收集处理个人信息」→ GDPR/PIPL 的处理者义务基本不触发（research-business.md 已论证）；
+  但三个细节易被忽略：① 产品经手 `secrets.json`（API 密钥明文）——备份时是本地复制，须在 UI/文档明示
+  「备份包含密钥文件」并默认不导出密钥到分享包（对照 Foreverse「备份不含密钥」的口径）；② 隐私文案措辞
+  须精确——「默认不上传」而非「绝不联网」（依赖更新等场景）；不做任何遥测才能兑现「无遥测」声明；
+  ③ 分发端合规：README 需隐私说明 + 第三方依赖清单 + 许可证（提示词 10 发布审查项；创始人指令 3 双语）。
+- **可落地建议（1 条）**：lead 在 W3/插件 P4 任务中并入「隐私声明（中英双语）定稿」子任务，researcher
+  提供初稿（基于 marketing-copy 合规红线扩展为 6 条：无账号/无云端/无遥测/密钥默认不导出/修复不覆盖原文件/
+  许可证与依赖清单）；qa-reviewer 第 3 轮发布审查时逐条核对「声明与实现一致」。受益 agent：lead（排期）、
+  researcher（初稿）、qa-reviewer（核对）。
+
+### 第 3 篇｜测试工程（2026-11-07）
+- 观察：测试体系强在 Python 侧（数百例+三轮审核），弱在：① JS 侧依赖 Node 可用性（st-plugin-plan 5.1 未验）；
+  ② failure-case-library §5 的「24 案例合成样本设计」目前是文档，尚未转成测试任务；③ 无属性测试
+  （hypothesis 仅建议）；④ 真实授权样本为 0——合成样本只能证明「代码按预期跑」，不能证明「预期符合现实」。
+- **可落地建议（1 条）**：lead 把 failure-case-library §5 的样本表拆成「合成样本任务卡」逐条派给
+  developer/qa（每条含：样本要点+断言方向+案例编号），每完成一条在案例库打勾回填——防止 24 条设计
+  输入腐化为纸面文档。受益 agent：lead（拆卡派单）/ developer、qa-reviewer（执行）。
+- 待验证项同步：JS 单测的真实运行证据链（Node 实测）在 P2 前置门补齐；真实样本缺口靠 12 章「3 样本」
+  门槛推进，不因合成样本齐全而放松。
+
 ---
 
 ## 待办备注
 
-- 修订队列：ui-design-direction.md、claude-design-study.md 需与 frontend-redesign-brief.md（规则 10：
-  禁粒子/光斑、中文标题宋体系、玻璃阴影从简）对齐（我的写作用域，后续批次执行）。
-- 批次 2 资源预告：风险主题资源（备份完整性验证技能、restic check 语义）、中文社区新帖跟踪、
-  ST 1.20 动向等。
+- ✅ 已完成：ui-design-direction.md、claude-design-study.md 已对齐 frontend-redesign-brief.md（规则 10）。
+- ✅ 已完成：st-launch-plan.md 已加「投放暂停横幅」（规则 13）。
+- 下一批预告：ST 1.20 动向、Noto Serif SC vendoring 审批材料预写、中文社区新帖跟踪、
+  与规则 11（注释全覆盖）配套的注释标准建议。

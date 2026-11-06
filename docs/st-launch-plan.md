@@ -1,5 +1,11 @@
 # ST 插件上市投放计划（st-launch-plan）
 
+> ⛔ **投放暂停横幅（2026-11-07，AGENTS.md 规则 13）**：在完成市场验证并经创始人确认之前，
+> 本计划所有投放动作**冻结**——不发布 Release、不发社区帖、不提交官方收录申请。
+> 冻结条件与放行门槛见 [plugin-market-validation.md](./plugin-market-validation.md) 第 6 节
+> （conditional-go：真机验证 5–10 人 + ≥3 授权样本 + ≥2 付费/预售信号 + 移动端占比数据）。
+> 本计划当前仅作「验证期准备材料」，其中第 4 节验收清单可照常用于内部真机验收，不属于对外投放。
+
 > 编制：researcher（Agent Teams，常驻资源与智慧中枢）｜ 日期：2026-11-07
 > 对象：docs/st-plugin-plan.md（developer 计划稿，选项 1 最小插件）的上市/投放/验收配套；
 > 依据：[research-st-plugin.md](./research-st-plugin.md)、[marketing-copy.md](./marketing-copy.md)（模板 A–D）、

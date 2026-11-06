@@ -42,9 +42,10 @@
 
 ## 待你决策/操作
 
-1. 🎨 **看风格预览 v2**：http://127.0.0.1:8778/style-preview.html（Ctrl+F5 强刷）——给视觉反馈（字体/按钮/交互），并定标题衬线字体（主选 Cormorant Garamond / 备选 Fraunces）；
-2. **W3 继续暂停**（你的决定）；
-3. MCP/工具 Top 5 清单待你批准后配置（见 docs/resource-map.md 第 5 节）；
+1. **投放已暂停**（你的指令）：等《市场验证报告》（异质性/原创性/先进性/竞争力）+ QA 裁决后，你确认再投放；
+2. ST 插件真机验收（五步清单见 docs/st-launch-plan.md §4，随时可做）；
+3. MCP/工具 Top 5 清单待你批准后配置（docs/resource-map.md 第 5 节）；
+4. W3 仍暂停。
 
 ## 规矩提醒（一直有效）
 

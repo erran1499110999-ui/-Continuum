@@ -1,8 +1,11 @@
 # Claude 网页端设计系统研究报告（claude-design-study）
 
 > 编制：researcher（Agent Teams）｜ 日期：2026-11-07
+> **权威规范声明**：[frontend-redesign-brief.md](./frontend-redesign-brief.md)（创始人 2026-11-07，AGENTS.md 规则 10）
+> 为前端执行权威规范，冲突时以 brief 为准（如：中文标题宋体系禁楷体/霞鹜文楷/手写、无粒子/光斑、
+> 玻璃与阴影从简）；本报告的按键排布/动效/排版参数在 brief 无冲突处参考 Claude 网页端。
 > 用途：按创始人指令（AGENTS.md 规则 8：前端字体、按键排布、交互方式**严格参照 Claude 网页端设计**；
-> 美学基调仍为已确认的「有生命力的温暖朦胧」），为 frontend-developer 修订预览页提供设计依据。
+> 美学基调为已确认的「温暖、可信、有生机」），为 frontend-developer 修订预览页提供设计依据。
 > 方法：公开资料 + 高保真逆向工程手册（open-claude-ui，基于对 Claude Desktop 生产包 REA 逆向取证）
 > + 品牌字体资料；逆向类数据标注来源版本，落地前由 frontend-developer 在真机复核关键值。
 > 只出文档、不写代码；所有字体资源 OFL 可 vendoring。
@@ -37,11 +40,11 @@
 |---|---|---|---|
 | 标题 serif | **[Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond)**（主选） | Fraunces、Lora | 高对比衬线、编辑感强；备选 Fraunces（软衬线+光学轴）或 Lora；字重锁定 400–500；**最终以创始人确认为准** |
 | 正文 sans | **[Inter](https://rsms.me/inter/)** | Instrument Sans | Claude 社区文档的公认 fallback；替换原 ui-design-direction 中的 Nunito（Nunito 过圆，与 Styrene 的人文几何感不符） |
-| 中文标题 | **[霞鹜文楷 LXGW WenKai](https://github.com/lxgw/LxgwWenKai)** | — | 与 serif 标题气质同源（温润手写）；沿用已确认方案 |
-| 中文正文 | **[Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC)** | — | 正文可读性 |
+| 中文标题 | **[Noto Serif SC（思源宋体）](https://fonts.google.com/noto/specimen/Noto+Serif+SC)** | `"Songti SC","STSong","SimSun",serif` | **宋体系（brief 强制：禁楷体/霞鹜文楷/手写）**；不照搬西文负字距，保持自然字距 |
+| 中文正文 | **[Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC)** | `"PingFang SC","Microsoft YaHei",sans-serif` | 黑体系正文（brief 四） |
 | 代码/哈希 | **[JetBrains Mono](https://www.jetbrains.com/lp/mono/)** | SF Mono 不可 vendoring | 恰为 Claude 官方 mono fallback，零争议 |
 
-> 结论：字体栈 = `Cormorant Garamond(标题主选；备选 Fraunces/Lora，最终以创始人确认为准) + Inter(正文/UI) + 霞鹜文楷(中文标题) + Noto Sans SC(中文正文) + JetBrains Mono(代码/数字)`，全部 OFL、本地文件。
+> 结论：字体栈 = `Cormorant Garamond(西文标题主选；备选 Fraunces/Lora，最终以创始人确认为准) + Noto Serif SC(中文标题，宋体系；禁楷体/霞鹜文楷/手写) + Inter(西文正文/UI) + Noto Sans SC(中文正文，黑体系) + JetBrains Mono(代码/数字)`，全部 OFL 可 vendoring；本轮以已批准资源 + 系统回退为先（brief 四）。
 
 ---
 
@@ -82,7 +85,7 @@
 | ghost | 图标/内联微操作，hover 5% 灰度渐入 |
 | danger | 警示深红 + 专属红色 focus 光晕 |
 | brand | `#c6613f` 深陶土（桌面品牌动作） |
-| **onContent** | 悬浮在图片/内容上的毛玻璃按钮：`backdrop-blur-md` + 4px 羽化 + 深色半透明——**与我们毛玻璃按钮规格完全一致，可直接采用** |
+| **onContent** | 悬浮在图片/内容上的毛玻璃按钮：`backdrop-blur-md` + 4px 羽化 + 深色半透明；**注意 brief 七「阴影与玻璃效果从简」——仅在确有内容浮层时按此变体处理，不扩散为装饰性玻璃层** |
 
 ### 4.3 交互物理（Claude 特色，可抄）
 - **15 阶纯 CSS 弹簧**（`linear()` 曲线）：按压 0.975 缩放，松开 40% 时刻过冲至 1.0915 → 微回弹 0.9914 → 1.0004 收敛；小按钮细腻、大按钮扎实（阻尼随高度自适应）。
@@ -147,7 +150,7 @@
 
 ## 9. 给 frontend-developer 的 10 条可直接照做的规范要点
 
-1. **字体栈五件套（全 OFL vendoring）**：Cormorant Garamond(标题主选，≤500 字重；备选 Fraunces/Lora，**最终以创始人确认为准**) / Inter(UI 正文) / 霞鹜文楷(中文标题) / Noto Sans SC(中文正文) / JetBrains Mono(代码数字)；fallback 顺序抄 Anthropic 官方栈。
+1. **字体栈（全 OFL，对齐 brief 四）**：Cormorant Garamond(西文标题主选，≤500 字重；备选 Fraunces/Lora，**最终以创始人确认为准**) / Noto Serif SC(中文标题宋体系，回退 `Songti SC/STSong/SimSun`；**禁楷体/霞鹜文楷/手写**) / Inter(西文正文/UI) / Noto Sans SC(中文正文黑体系，回退 `PingFang SC/Microsoft YaHei`) / JetBrains Mono(代码数字)；西文 fallback 顺序抄 Anthropic 官方栈。
 2. **颜色令牌双主题**：暖阳奶油（Claude 系：Parchment #f5f4ed、墨 #141413、Olive Gray #5e5d59）+ 森林夜语；**Clay #d97757 只给每页唯一最强 CTA**，常规强调用杏橙 #E8843C；全站禁用冷灰。
 3. **按钮五阶高度标尺**（19/23/26/32/40px + 嵌套衰减），md 为默认；secondary 为默认变体（无硬边框+hover 微灰）；onContent 毛玻璃变体用于悬浮控件。
 4. **按钮物理**：15 阶 linear() 弹簧 + 按下 0.975 缩放 + 绘景层分离；focus-visible 发丝环；组合按钮三态圆角协议；填充按钮用底部 8px 圆角签名细节。
@@ -170,7 +173,7 @@
 - [Anthropic 品牌排版（字体栈/字阶/fallback）](https://github.com/asgeirtj/system_prompts_leaks/blob/79447393f49792cf0b77ccd9ec03af302d0c8eb2/Anthropic/artifact-types/design/artifact-type/reference/brand-typography.md)（2025-12）
 - [Claude 设计系统模板（Parchment/Clay 用法铁律）](https://github.com/yc-software/qm/blob/5546fa13e620a3835e1b36cd945d43842ec29955/skills-seed/popular-web-designs/templates/claude.md)（2026-11）、[Refero 风格库 Anthropic 条目](https://styles.refero.design/style/d469cba4-c448-4a43-a033-883f8bfcdc42)（2026-02）
 - [Claude 生成式 UI 组件指南（0.5px 边框/按钮预样式）](https://github.com/dwsy/agent/blob/291e371f7dc7a795f0141d2a5558285231eaa9a/extensions/generative-ui/claude-guidelines/sections/ui_components.md)（2026-10）
-- 字体（OFL）：[Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond)（标题主选）、[Fraunces](https://fonts.google.com/specimen/Fraunces)、[Lora](https://fonts.google.com/specimen/Lora)（备选）、[Inter](https://rsms.me/inter/)、[LXGW WenKai](https://github.com/lxgw/LxgwWenKai)、[Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC)、[JetBrains Mono](https://www.jetbrains.com/lp/mono/)
+- 字体（OFL）：[Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond)（西文标题主选）、[Fraunces](https://fonts.google.com/specimen/Fraunces)、[Lora](https://fonts.google.com/specimen/Lora)（备选）、[Noto Serif SC](https://fonts.google.com/noto/specimen/Noto+Serif+SC)（中文标题宋体系）、[Inter](https://rsms.me/inter/)、[Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC)（中文正文黑体系）、[JetBrains Mono](https://www.jetbrains.com/lp/mono/)；霞鹜文楷已按 brief 废弃（禁楷体/手写风格）。
 - 项目内联动：[ui-design-direction.md](./ui-design-direction.md)（暖阳奶油/森林夜语）、[failure-case-library.md](./failure-case-library.md)（CASE-10）
 
 > 说明：逆向类数值（按钮像素、弹簧曲线等）来自第三方对 Claude Desktop 生产包的取证手册，

@@ -20,6 +20,17 @@
 | 7 | [RP-Card-Vault 目录页](https://www.toolcenter.ai/zh/tools/rp-card-vault)（2026-10） | local-first 卡管理（搜索/标签/备份/发送到 ST 等）已上架工具目录 | 最接近的定位竞品仍在卡管理层面；我们「聊天记录+世界书+配置」全量连续性是区隔，后续批次跟踪其功能动态 |
 | 8 | [nat20-bridge](https://github.com/tapestria/nat20/blob/e187c813bb4e43c4e4e62942ecd83831f1cdbcaa/packages/nat20-bridge/README.md)（2026-10） | 社区出现「ST 扩展 + 本地 Python sidecar」开源先例 | 验证我们的插件架构路线可被社区接受；可关注其后续生态作为选项 2 参考 |
 
+## 批次 2（2026-11-07）
+
+| # | 来源+日期 | 事实要点 | 对产品的启示 |
+|---|---|---|---|
+| 1 | [QA 裁决书 validation-verdict.md](./validation-verdict.md)（2026-11-07 02:05） | 审判官抽检 3 个竞品来源：RecordRecoveryAssistant 实为「Safe Restore：另存新档、绝不覆盖」（非覆盖式）；st-saves「会覆盖本地数据」逐字准确；nat20-bridge 先例成立 | 竞品能力盘点必须逐条核对原文，我方「安全恢复」卖点与 RRA 重叠——差异化重心进一步压向「诊断+修复分级+迁移验证」而非恢复方式 |
+| 2 | [ST 1.19.0](https://github.com/SillyTavern/SillyTavern/releases/latest)（2026-11-06 访问） | 官方合并 #5458/#5944/#5980：首行损坏不再静默覆盖、CJK 备份键独立、覆盖前落快照 | 「防新事故」价值窗口收窄（承接批次 1 #3）；引擎告警话术应按用户 ST 版本区分，避免对新版用户过度恐吓（live-resource-feed 批次 2 #4 已列行动） |
+| 3 | [zer0thgear/character-card-editor](https://relatedrepos.com/gh/zer0thgear/character-card-editor)（2024-09） | 独立 V2/V3 规范卡编辑器（社区小工具生态活跃信号） | 卡编辑需求有工具覆盖——我们不与编辑器争市场，「体检+迁移」定位正确；可跟踪其 V3/CHARX 支持进度作为格式生态晴雨表 |
+| 4 | [research-community.md](./research-community.md) NGA 白屏抢救帖（2025） | 中文社区「界面打不开也要救数据」需求持续存在（社区手工教复制 data 文件夹） | 「无界面抢救」内容页选题（升级前自查清单/白屏抢救手册）的市场窗口仍在；投放冻结期间可先完成内容创作备稿 |
+| 5 | [business-feed 批次 1 待跟踪项](./business-feed.md) 复核 | Chub 加密币计费说法仍无官方页佐证（仅第三方评测），保持「待复核」不采信 | 竞品定价情报一律按「快照+待复核」口径引用，避免以讹传讹（与 QA 裁决 E3 同源教训） |
+| 6 | 市场机会观察（本批次推断，标注为推断） | 「多版本并存用户的迁移往返保真验证」仍无工具覆盖（ST 官方导入无验证报告、TavernAI 2 无字段级核对） | 迁移验证（提示词 7）仍是抽检范围内未发现的组合要素之一；可作为首个「内容页+产品」联合选题 |
+
 ---
 
 ## 待跟踪清单（下一批优先）
