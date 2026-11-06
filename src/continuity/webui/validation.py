@@ -44,6 +44,8 @@ def require_new_output_dir(value: Any, *, source: Any = None) -> Path:
     不得嵌套于源目录」规则保持一致，作为引擎之外的 UI 层预检。
     """
     raw = require_path(value, name="输出目录")
+    # resolve() 对不存在的路径也适用（strict=False 默认），
+    # 因此「输出目录不存在」与「嵌套于源目录」两项预检都基于解析后的绝对路径判断
     path = Path(raw).resolve()
     if path.exists():
         raise ValidationError(f"输出目录已存在，请选择新目录: {path}")
@@ -55,7 +57,11 @@ def require_new_output_dir(value: Any, *, source: Any = None) -> Path:
 
 
 def host_is_allowed(host_header: str) -> bool:
-    """Host 头白名单：仅接受 127.0.0.1 与 localhost（任意端口），防 DNS rebinding。"""
+    """Host 头白名单：仅接受 127.0.0.1 与 localhost（任意端口），防 DNS rebinding。
+
+    解析细节：rsplit 一次去掉最右侧端口（"localhost:8765" → "localhost"）；
+    含多个冒号的畸形主机名剥端口后仍不在白名单，自然被拒。
+    """
     if not host_header:
         return False
     host = host_header.strip()

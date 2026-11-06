@@ -29,8 +29,9 @@ def version() -> Dict[str, str]:
 def scan_worker(source: str, *, log: Optional[Callable[[str], None]] = None) -> Dict[str, object]:
     """在 job 工作线程内执行只读扫描，返回序列化报告（源目录绝不写入）。
 
-    资源上限等引擎错误（ScanError/OSError）会在此抛出，由 JobManager
-    捕获为 failed 状态并把面向用户的错误信息透传给前端。
+    错误传播约定：引擎抛出的 ScanError/OSError（资源上限、权限等）不在此捕获，
+    由 JobManager 捕获为 failed 状态并把面向用户的错误文案透传给前端——
+    保证 HTTP 错误与 CLI 错误来自同一引擎、同一文案。
     """
     report = scan_directory(Path(source))
     data = scan_report_to_json(report)

@@ -131,6 +131,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _route(self) -> None:
         try:
+            # 安全顺序：Host 白名单 → 路由分发；Host 校验必须先于一切业务处理
             if not host_is_allowed(self.headers.get("Host", "")):
                 self._send_json(
                     400,
@@ -220,7 +221,11 @@ class _Handler(BaseHTTPRequestHandler):
             return False
 
     def _read_body(self) -> bytes:
-        """按 Content-Length 读取请求体（上限 MAX_BODY_BYTES，防超大请求）。"""
+        """按 Content-Length 读取请求体（上限 MAX_BODY_BYTES，防超大请求）。
+
+        超限时不读剩余字节，而是设置 close_connection 让本次响应后立即断开：
+        未读的超限请求体绝不能残留在缓冲区里被当作下一条请求解析（请求走私防线）。
+        """
         raw = self.headers.get("Content-Length", "")
         try:
             length = int(raw)

@@ -20,6 +20,11 @@ from continuity.webui.server import WebUIServer
 
 @pytest.fixture
 def webui():
+    """真实服务器：127.0.0.1 随机端口（port=0）+ 真实 serve_forever 线程。
+
+    收口路径：shutdown() 先停接客、再收任务线程、最后 server_close，
+    与 __main__.py 的生产用法完全一致——测试跑的就是生产代码路径。
+    """
     server = WebUIServer(port=0)
     thread = threading.Thread(
         target=server.serve_forever, name="webui-test-server", daemon=True

@@ -89,6 +89,7 @@ class JobManager:
         with self._lock:
             if self._stopped:
                 raise RuntimeError("任务队列已停止，无法提交新任务")
+            # ACTIVE_STATES 检查在锁内完成：提交与完成并发时不会误判忙碌/漏判
             if any(j.state in ACTIVE_STATES for j in self._jobs.values()):
                 raise JobQueueFullError("已有任务正在排队或运行，请等待其完成后再提交")
             job = Job(id=uuid.uuid4().hex[:12], fn=fn)
@@ -103,7 +104,12 @@ class JobManager:
             return job.to_dict() if job is not None else None
 
     def log(self, line: str) -> None:
-        """把一行日志写入当前线程正在执行的任务（供任务函数内部调用）。"""
+        """把一行日志写入当前线程正在执行的任务（供任务函数内部调用）。
+
+        实现：工作线程执行任务前把 job 存入线程局部变量（threading.local），
+        任务函数内调用 manager.log 时经线程局部变量找到所属任务——
+        单工作线程下天然无并发写，跨线程调用则静默忽略。
+        """
         job: Optional[Job] = getattr(self._local, "job", None)
         if job is None:
             return
@@ -149,7 +155,11 @@ class JobManager:
                     self._prune_locked()
 
     def _prune_locked(self) -> None:
-        """已完成任务只保留最近 MAX_FINISHED_JOBS 个（调用方必须已持锁）。"""
+        """已完成任务只保留最近 MAX_FINISHED_JOBS 个（调用方必须已持锁）。
+
+        动机：任务字典随使用无限增长会耗尽内存（复审项 A7）；
+        有活动任务时字典最多 64 个已完成 + 1 个活动任务，保持有界。
+        """
         finished = [j for j in self._jobs.values() if j.state in TERMINAL_STATES]
         if len(finished) <= MAX_FINISHED_JOBS:
             return

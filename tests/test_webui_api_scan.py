@@ -91,7 +91,7 @@ def _wait_job(server, job_id, *, timeout=30.0):
 
 
 def _run_scan(server, source):
-    """提交扫描任务并等待结束，返回最终 job 快照。"""
+    """提交扫描任务并等待结束，返回最终 job 快照——多数测试的公共主路径。"""
     status, payload = _post(server, "/api/jobs/scan", {"source": str(source)}, token=server.token)
     assert status == 202, payload
     snap = _wait_job(server, payload["job_id"])
@@ -99,7 +99,10 @@ def _run_scan(server, source):
 
 
 def _snapshot_tree(root):
-    """目录内容快照（相对路径 → SHA-256），用于源目录零写入断言。"""
+    """目录内容快照（相对路径 → SHA-256），用于源目录零写入断言。
+
+    快照覆盖「文件集合 + 全部字节」，新增/删除/篡改任一种都会失配。
+    """
     out = {}
     for p in sorted(root.rglob("*")):
         if p.is_file():

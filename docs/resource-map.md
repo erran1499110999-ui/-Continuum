@@ -124,7 +124,55 @@
 
 ---
 
-## 5. 团队可立即采用的 Top 10 清单
+## 5. 可用 AI 工具与 MCP（新增，2026-11-07）
+
+> 依据 AGENTS.md 规则 7（充分利用可用 AI 工具）与创始人指令。**团队不擅自安装/配置**——
+> 以下为候选清单，经创始人批准后才由 lead 协调配置；凭据只存环境变量。
+> 每条标注：用途 / 获取方式 / 配置复杂度 / 许可证与风险。
+
+### 5.1 MCP 服务器候选
+
+| 工具 | 用途 | 获取方式 | 配置复杂度 | 许可证/风险 |
+|---|---|---|---|---|
+| **GitHub MCP**（[github/github-mcp-server](https://github.com/github/github-mcp-server)） | 仓库/PR/Issue/Release 操作，配合每阶段推送与问题跟踪 | 官方发布，远程/本地均可；需 PAT（repo 范围，环境变量） | 低-中 | 官方维护；风险=令牌权限，**只给 repo 范围、只读优先** |
+| **Playwright MCP**（[microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)） | 真实浏览器自动化：Web UI 端到端测试、截图取证、设计预览验收 | npx 或远程；需 Node | 中 | 官方（Microsoft）；风险=浏览器执行任意页面操作，仅限本地测试目标（127.0.0.1:8777） |
+| **Filesystem MCP**（[modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)） | 工作区外的受控文件访问（读取配置文件、样本目录） | npx | 低 | 参考实现；**铁律：只授权明确目录，绝不授 / 或用户主目录**（社区一致警告） |
+| **Fetch MCP**（同上参考实现） | 只读抓取公开文档/URL（弥补内置 fetch 的域限制） | npx | 低 | 风险=可抓内网地址，需配合网络边界约定（只抓公开站点） |
+| **Sequential Thinking MCP**（同上） | 复杂排错/多步推理的结构化辅助 | npx | 低 | 纯推理工具，无副作用 |
+| **Everything MCP**（Windows 文件检索） | Windows 全盘文件名快速检索（定位 ST 安装目录等） | 社区实现 | 低-中 | 只读检索；确认来源可信后再批 |
+| （可选）**Memory MCP** / **Chrome DevTools MCP** | 会话记忆 / 浏览器调试 | 官方参考实现 | 低-中 | 按需再议 |
+
+### 5.2 Agent Skill 与设计/研究辅助
+
+| 工具 | 用途 | 获取方式 | 复杂度 | 许可证/风险 |
+|---|---|---|---|---|
+| **extract-design-system**（[npm](https://www.npmjs.com/package/extract-design-system)） | 从公开网站抽取设计令牌（色/字/间距/圆角/阴影）生成 CSS 变量 | skills.sh 生态安装的 skill + CLI | 低 | 待核实；产出须人工复核（对 claude.ai 等站的令牌抽取仅作参考，勿直接商用其专有资产） |
+| **open-claude-ui**（[GitHub](https://github.com/Caho1/open-claude-ui)） | Claude 设计系统高保真令牌/纯 CSS 层（tokens.css/pure.css 可脱离 React 使用），261 令牌 + 零 JS 滚动消隐 | git clone / 手动下载 CSS | 低 | **许可证待核实**；作为 [claude-design-study.md](./claude-design-study.md) 的落地捷径 |
+| **tsParticles**（[官网](https://particles.js.org/)/npm） | 轻量粒子库（**Firefly 萤火虫预设**与我们的粒子基调吻合；pauseOnBlur 内置） | 下载 dist 单文件 vendoring（零构建） | 低 | MIT；无需 npm，注意与我们「CSS 优先」方案的取舍（canvas 增强时引入） |
+| **css.glass**（glassmorphism 生成器） | 毛玻璃 CSS 参数速查生成 | 网页工具 | 低 | 工具类；生成值并入我们自己的令牌 |
+| 本会话已有 skill：`diagnose-windows-sandbox-acl` | 沙箱 ACL 诊断（团队环境问题） | DSH 内置 | — | 已可用，遇到访问拒绝时先跑它 |
+
+### 5.3 成熟产品设计案例链接（研究/预览页参照）
+
+- Claude/Anthropic（本次设计基线）：[claude.ai](https://claude.ai/)、[Anthropic 官网](https://www.anthropic.com/)
+- 现代工具类：[Linear](https://linear.app/)、[Vercel](https://vercel.com/)、[Stripe](https://stripe.com/)、[Raycast](https://www.raycast.com/)、[Notion](https://www.notion.so/)、[Arc](https://arc.net/)
+- 人文/氛围类（已确认美学基调参照）：[Journey](https://thatgamecompany.com/journey/)、[Animal Crossing](https://animal-crossing.com/)、[Apple 设计资源（Liquid Glass）](https://developer.apple.com/design/)
+- 风格参数库：[2024–2026 SaaS 风格分类学](https://raw.githubusercontent.com/MohamedAbdallah-14/prompt-to-asset/refs/heads/main/docs/research/10-ui-illustrations-graphics/10b-hero-images-and-marketing-banners.md)
+
+### 5.4 建议配置的 MCP/工具 Top 5（需创始人批准后才配置）
+
+1. **GitHub MCP**——每阶段推送、Issue/PR 跟踪、发布管理（令牌 repo 范围、环境变量）。
+2. **Playwright MCP**——Web UI 与 ST 插件的真实浏览器验证/截图（qa-reviewer 三轮审核的取证工具）。
+3. **Filesystem MCP**——限定工作区与样本目录的受控文件访问（绝不授系统盘根/主目录）。
+4. **Fetch MCP**——只读抓取公开文档（缓解内置 fetch 的域限制，遵守「只抓公开站点」约定）。
+5. **Sequential Thinking MCP**——复杂问题结构化推理（纯推理、无副作用、风险最低）。
+
+> 规则检查：以上均不涉及 NFT/代币/钱包/云上传（规则 8）；所有含令牌/凭据的配置仅存环境变量；
+> 团队在创始人批准前不安装、不配置任何一项。
+
+---
+
+## 6. 团队可立即采用的 Top 10 清单
 
 1. **nat20-bridge 架构模式**（UI 扩展 + localhost sidecar）——ST 插件选项 2 的直接蓝图；先例已跑通 CORS/双进程问题。
 2. **Pico.css 或等价单文件 CSS 起步**——零构建、深色模式内置，符合方案 A 约束；后续可替换为自建设计系统。
@@ -139,7 +187,7 @@
 
 ---
 
-## 6. 来源（补充说明）
+## 7. 来源（补充说明）
 
 - 主要来源已随条目内联标注（URL + 日期）。
 - 学术部分：arXiv API 在本会话不可达，所列文献均为长期稳定的主页/DOI 链接，未虚构条目；恢复网络后可补充「JSON repair / data corruption detection」的 arXiv 检索结果。

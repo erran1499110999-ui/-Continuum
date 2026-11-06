@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="sun">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuity Studio · 风格预览 v2（Claude 骨架 × 暖色两主题）</title>
+<style>
+/* ============================================================
+   Continuity Studio 风格预览页 v2（纯静态、零外部资源、零依赖）
+   - 排版与交互骨架严格参照 Claude 网页端（claude.com / claude.ai）
+     提取要点见 docs/frontend-design-notes.md；
+   - 美学基调保留 docs/ui-design-direction.md：暖阳奶油（亮，默认）/
+     森林夜语（暗）两主题 + 液态玻璃 + 光斑 + 粒子 + 噪点；
+   - 字体为系统近似回退栈；最终版将 vendoring OFL 字体
+     Cormorant Garamond / Inter / 霞鹜文楷 / Noto Sans SC / JetBrains Mono。
+   ============================================================ */
+
+/* ---------- 设计令牌：主题 A「暖阳奶油」（亮，默认） ---------- */
+:root, html[data-theme="sun"] {
+  /* 色彩（沿用 ui-design-direction 第 3 节，对比度已核验） */
+  --bg-canvas: #FAF3E8;            /* 页面画布（暖奶油，≈Claude #faf9f5 方向） */
+  --bg-deep: #F3E7D3;              /* 次级底 */
+  --surface-glass: rgba(255,249,240,.55);  /* 毛玻璃面板底色 */
+  --surface-solid: #FFF9F0;        /* 实底卡片/控件（不支持 blur 时的回退） */
+  --surface-card: #F3E7D3;         /* 比画布深一档：标签激活/按钮 hover 底（Claude surface-card） */
+  --ink: #4A3B2C;                  /* 正文暖棕墨 */
+  --ink-2: #8A7A64;                /* 次级文本 */
+  --ink-3: #B09A7E;                /* 弱文本/占位 */
+  --hairline: rgba(122,96,64,.22); /* Claude hairline：1px 边框基调 */
+  --border: rgba(122,96,64,.14);   /* 玻璃面板内弱边框 */
+  --accent: #E8843C;               /* 主强调（杏橙）：主按钮底/焦点环 */
+  --accent-strong: #B95F1F;        /* 链接文字 + 按钮 hover 变深 */
+  --accent-deep: #8A4A1C;          /* 按钮 press 更深 */
+  --on-accent: #3D2B1A;            /* 橙底深棕字（对比度优于 Claude 珊瑚底白字，AA 达标） */
+  --focus-ring: rgba(232,132,60,.16);  /* 3px 焦点外环（accent 15% 透明，Claude 式） */
+  --success: #6E9A5B;              /* R0 苔绿 */
+  --warn: #C98A2B;                 /* R1 蜂蜜黄 */
+  --suggest: #8A7A64;              /* R2 中性暖灰 */
+  --danger: #C96A54;               /* R3 陶土红 */
+  --danger-soft: rgba(201,106,84,.12); /* 危险按钮 hover 淡底 */
+  /* 氛围层（光斑/粒子/噪点） */
+  --blob-1: #FFD9B8; --blob-2: #FFE3B3; --blob-3: #F9C9BE;
+  --particle-a: #F2B25C; --particle-b: #FFE0A3;
+  --noise-opacity: .035;
+  --shadow: rgba(90,70,50,.08);    /* 微阴影（Claude 克制：0 1px 3px 级） */
+  --highlight: rgba(255,255,255,.35);  /* 玻璃面板顶部折射高光 */
+}
+/* ---------- 设计令牌：主题 B「森林夜语」（暗） ---------- */
+html[data-theme="forest"] {
+  --bg-canvas: #16251F;
+  --bg-deep: #1B2E26;
+  --surface-glass: rgba(34,58,48,.45);
+  --surface-solid: #223A30;
+  --surface-card: #223A30;
+  --ink: #EAF2EA;
+  --ink-2: #A8C0B2;
+  --ink-3: #6E8A7A;
+  --hairline: rgba(190,220,200,.22);
+  --border: rgba(190,220,200,.14);
+  --accent: #7FBF9A;
+  --accent-strong: #9AD8B4;
+  --accent-deep: #4F8A6B;
+  --on-accent: #12241B;
+  --focus-ring: rgba(127,191,154,.18);
+  --success: #8CC9A8;
+  --warn: #E3C06B;
+  --suggest: #A8C0B2;
+  --danger: #E08E7E;
+  --danger-soft: rgba(224,142,126,.14);
+  --blob-1: #2E5C44; --blob-2: #3E7A5C; --blob-3: #2A4D45;
+  --particle-a: #A3E6C0; --particle-b: #D8F5E2;
+  --noise-opacity: .05;
+  --shadow: rgba(0,0,0,.25);
+  --highlight: rgba(255,255,255,.18);
+}
+/* ---------- 设计令牌：字体 / 间距 / 圆角 / 动效（Claude 骨架） ---------- */
+:root {
+  /* Claude 字体系统：衬线标题（400 字重 + 负字距）+ 无衬线正文 + 等宽代码
+     系统回退栈；最终 vendoring 方案见页脚 */
+  --font-display: "Cormorant Garamond", "Lora", Georgia, "KaiTi", "STKaiti", "楷体", "Times New Roman", serif;
+  --font-body: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+  /* 间距：4px 基座（Claude spacing 4/8/12/16/24/32/48/96） */
+  --sp-xxs: 4px; --sp-xs: 8px; --sp-sm: 12px; --sp-md: 16px;
+  --sp-lg: 24px; --sp-xl: 32px; --sp-xxl: 48px; --sp-section: 96px;
+  /* 圆角：按钮/输入 8（md）、卡片 12（lg）、Hero 容器 16（xl）、徽章/图标钮 pill */
+  --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
+  /* 动效：交互过渡 150ms、出现动画 200ms、标准 ease-out */
+  --ease-out: cubic-bezier(.4, 0, .2, 1);
+  --dur-fast: 150ms; --dur-base: 200ms;
+}
+
+/* ---------- 基础排版 ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-canvas);
+  color: var(--ink);
+  font: 400 16px/1.7 var(--font-body);   /* 正文无衬线 16px（Claude body-md 折算） */
+  min-height: 100vh;
+  transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
+}
+/* Claude 硬规则：衬线标题 400 字重 + 负字距，绝不加粗 */
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+h1 { font-size: clamp(34px, 4.5vw, 46px); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 16px; }
+h2 { font-size: 24px; line-height: 1.3; margin: 0 0 6px; }
+.mono { font-family: var(--font-mono); text-align: right; }
+/* 全局焦点环：3px 强调色 15% 透明外环（Claude text-input-focused 式，无 outline 延迟） */
+:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+
+/* ---------- 背景氛围层（fixed、z-index 负值，永不覆盖正文） ---------- */
+.blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: .5;
+  pointer-events: none;
+  z-index: -3;
+  will-change: transform;
+}
+html[data-theme="forest"] .blob { filter: blur(90px); opacity: .45; }
+.blob.b1 { width: 44vmax; height: 44vmax; left: -12vmax; top: -14vmax; background: radial-gradient(circle, var(--blob-1), transparent 70%); animation: drift-a 26s ease-in-out infinite alternate; }
+.blob.b2 { width: 38vmax; height: 38vmax; right: -10vmax; top: 8vmax; background: radial-gradient(circle, var(--blob-2), transparent 70%); animation: drift-b 38s ease-in-out infinite alternate; }
+.blob.b3 { width: 34vmax; height: 34vmax; left: 22vmax; bottom: -14vmax; background: radial-gradient(circle, var(--blob-3), transparent 70%); animation: drift-c 44s ease-in-out infinite alternate; }
+/* 光斑错速漂移（周期 1.3–1.7 倍差）制造「流动感」 */
+@keyframes drift-a { from { transform: translate(0,0) scale(1); } to { transform: translate(6vmax, 4vmax) scale(1.12); } }
+@keyframes drift-b { from { transform: translate(0,0) scale(1.06); } to { transform: translate(-7vmax, 5vmax) scale(.96); } }
+@keyframes drift-c { from { transform: translate(0,0) scale(.98); } to { transform: translate(5vmax, -6vmax) scale(1.1); } }
+/* SVG feTurbulence 噪点（data-URI 自生成，无外部图片） */
+.noise {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: var(--noise-opacity);
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+html[data-theme="forest"] .noise { mix-blend-mode: overlay; }
+/* CSS-only 粒子（14 粒；光晕用径向渐变预制，避免运行时 blur 开销） */
+.css-particles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.css-particle {
+  position: absolute;
+  bottom: -4vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--particle-a) 0%, var(--particle-b) 45%, transparent 72%);
+  width: var(--sz, 7px);
+  height: var(--sz, 7px);
+  opacity: 0;
+  animation: float-up var(--dur, 12s) ease-in-out var(--delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+@keyframes float-up {
+  0%   { transform: translate(0, 0) translateX(0); opacity: 0; }
+  12%  { opacity: .8; }
+  50%  { transform: translate(var(--dx, 3vw), -46vh) translateX(1.5vw); opacity: .55; }
+  88%  { opacity: .25; }
+  100% { transform: translate(calc(var(--dx, 3vw) * -1), -92vh) translateX(-1vw); opacity: 0; }
+}
+/* canvas 粒子（仅「丰富」档启用，JS 绘制） */
+#fx-canvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+/* ---------- 毛玻璃面板与卡片（玻璃质感保留给大面板；阴影按 Claude 克制） ---------- */
+.glass {
+  position: relative;
+  background: var(--surface-solid);        /* 不支持 backdrop-filter 时的回退 */
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);              /* 卡片 12px（Claude lg） */
+  box-shadow: 0 4px 20px var(--shadow);    /* 玻璃面板仅保留极浅悬浮影 */
+  overflow: hidden;
+}
+@supports (backdrop-filter: blur(1px)) {
+  .glass {
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  }
+}
+.glass::before {  /* 顶部内侧高光：模拟玻璃折射 */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--highlight), rgba(255,255,255,0) 40%);
+  pointer-events: none;
+}
+.glass-pad { padding: 24px 28px; }
+.hero-card { border-radius: var(--r-xl); }  /* Hero 右侧容器 16px（Claude xl） */
+
+/* ---------- 顶栏（Claude 式：64px、hairline 底边、吸顶毛玻璃） ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  min-height: 64px;
+  background: var(--surface-solid);
+  border-bottom: 1px solid var(--border);
+}
+@supports (backdrop-filter: blur(1px)) {
+  .topbar { background: var(--surface-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+}
+.topbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand { font: 500 14px/1.4 var(--font-body); color: var(--ink-2); }
+.brand b { color: var(--ink); font-weight: 500; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* Claude category-tab 式分段标签：透明底 muted 字，激活 surface-card 底 + ink 字 */
+.seg { display: inline-flex; gap: 4px; }
+.seg button {
+  border: none;
+  background: transparent;
+  color: var(--ink-2);
+  font: 500 14px/1.4 var(--font-body);
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  min-height: 36px;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--surface-card); color: var(--ink); }
+
+/* ---------- 页面容器（≈Claude 1200px 内容宽） ---------- */
+.page { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+.section { margin-top: var(--sp-section); }          /* 区块节奏 96px（Claude section） */
+.section .desc { color: var(--ink-2); margin: 0 0 var(--sp-lg); font-size: 14px; }
+
+/* ---------- Hero（Claude 式 6/6 分栏：左文字右产品卡） ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-xxl);
+  align-items: center;
+  padding-top: 56px;
+}
+.hero .en { display: block; font-family: var(--font-display); font-size: 17px; font-weight: 400; letter-spacing: .02em; color: var(--ink-2); margin-top: 4px; }
+.hero p.sub { color: var(--ink-2); max-width: 480px; margin: 0; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 28px; }
+.btn-row.center { justify-content: center; }
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: var(--sp-lg); }
+  .field-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ---------- 按钮层级（Claude 几何：40px 高、8px 圆角、14px/500、无 hover 上浮） ---------- */
+.btn {
+  font: 500 14px/1 var(--font-body);
+  height: 40px;
+  padding: 0 20px;                 /* Claude primary/secondary：padding 12×20 */
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+/* press 反馈：变深 + 轻微缩放（Claude 产品端 active scale(.98)）；hover 不上浮 */
+.btn:active { transform: scale(.98); }
+.btn:focus-visible { box-shadow: 0 0 0 3px var(--focus-ring); border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:disabled:active { transform: none; }
+/* 主按钮：实底强调色 + 深棕字（AA 达标）；hover/press 逐级变深 */
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { background: var(--accent-strong); }
+.btn-primary:active { background: var(--accent-deep); }
+/* 次按钮：画布底 + 1px hairline 边（Claude secondary） */
+.btn-secondary { background: var(--surface-solid); color: var(--ink); border-color: var(--hairline); }
+.btn-secondary:hover { background: var(--surface-card); }
+.btn-secondary:active { background: var(--bg-deep); }
+/* 文字按钮：内联无底无边，hover 下划线（Claude text-link） */
+.btn-text { height: 32px; padding: 0 8px; background: transparent; color: var(--accent-strong); }
+.btn-text:hover, .btn-text:active { text-decoration: underline; }
+/* 圆形图标按钮 36px（Claude icon-circular） */
+.btn-icon {
+  width: 36px; height: 36px; padding: 0;
+  border-radius: 50%;
+  background: var(--surface-solid); border-color: var(--hairline); color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn-icon:hover { background: var(--surface-card); }
+.btn-icon:active { transform: scale(.95); }
+/* 危险按钮（本项目 R3 语义扩展）：透明底 + 危险色描边，hover 淡底 */
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); }
+.btn-danger:active { background: var(--danger-soft); }
+/* 触屏（pointer: coarse）最小点击区升至 44px（WCAG） */
+@media (pointer: coarse) { .btn { min-height: 44px; } }
+
+/* ---------- 输入控件（Claude：40px 高、8px 圆角、hairline 边、3px 焦点环） ---------- */
+.field { display: block; }
+.field-label { display: block; font: 500 13px/1.5 var(--font-body); color: var(--ink-2); margin: 0 0 6px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-lg); margin-top: var(--sp-lg); }
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-solid);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--font-body);
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out);
+}
+.input::placeholder { color: var(--ink-3); }
+.input:hover { border-color: var(--ink-3); }
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring); }
+.input:disabled { opacity: .55; background: var(--bg-deep); cursor: not-allowed; }
+/* composer「一个盒子」：输入区+发送钮合并，focus-within 整盒高亮（Claude 产品端） */
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  padding: 10px 12px;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring); }
+.composer textarea {
+  flex: 1;
+  border: none; background: transparent; outline: none; resize: none;
+  font: 400 16px/1.5 var(--font-body);
+  color: var(--ink);
+  min-height: 40px;
+  padding: 8px 0;
+}
+.composer textarea::placeholder { color: var(--ink-3); }
+.btn-send {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.btn-send:hover { background: var(--accent-strong); }
+.btn-send:active { background: var(--accent-deep); transform: scale(.95); }
+.card-kicker { font: 500 12px/1.5 var(--font-body); letter-spacing: .08em; color: var(--ink-3); margin-bottom: 16px; }
+.card-meta { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-3); }
+
+/* ---------- 修复等级徽章（文字+图标双通道，色弱友好；卡片交互：hover 边框加深） ---------- */
+.badge-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.badge {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border-radius: var(--r-lg);              /* 卡片 12px */
+  border: 1px solid var(--hairline);
+  padding: 20px;                           /* 小卡内边距 20px（Claude connector-tile 级） */
+  background: var(--surface-solid);
+  box-shadow: 0 1px 3px var(--shadow);     /* 微阴影（Claude 克制） */
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.badge:hover { border-color: var(--ink-3); }
+.badge svg { flex: none; margin-top: 2px; }
+.badge .b-title { font: 500 16px/1.4 var(--font-body); display: flex; align-items: center; gap: 8px; }
+.badge .b-title .lv { font: 500 12px/1.6 var(--font-mono); letter-spacing: .05em; border: 1px solid currentColor; border-radius: 999px; padding: 0 8px; }
+.badge .b-text { color: var(--ink-2); font-size: 14px; margin-top: 2px; }
+.b-r0 { color: var(--success); }
+.b-r1 { color: var(--warn); }
+.b-r2 { color: var(--suggest); }
+.b-r3 { color: var(--danger); }
+
+/* ---------- 示例表格（关键数字/哈希等宽右对齐，保留 Stripe 表格原则） ---------- */
+table.sample { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.sample th, table.sample td { padding: 10px 12px; border-bottom: 1px solid var(--hairline); text-align: left; }
+table.sample th { color: var(--ink-2); font: 500 13px/1.4 var(--font-body); }
+table.sample td.num, table.sample td.hash { font-family: var(--font-mono); text-align: right; }
+table.sample tr:last-child td { border-bottom: none; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.status .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.st-ok { color: var(--success); }
+.st-warn { color: var(--warn); }
+.st-suggest { color: var(--suggest); }
+.st-danger { color: var(--danger); }
+
+/* ---------- 动效演示与加载态 ---------- */
+/* 列表逐项进场：200ms 单项 + 30ms stagger（Claude 节奏；上限 12 项） */
+.stagger-list { list-style: none; margin: 0; padding: 0; }
+.stagger-list li {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--hairline);
+  opacity: 0;
+  transform: translateY(4px);
+  animation: enter var(--dur-base) var(--ease-out) forwards;
+  animation-delay: calc(var(--i) * 30ms);
+}
+.stagger-list li:last-child { border-bottom: none; }
+@keyframes enter { to { opacity: 1; transform: translateY(0); } }
+.replay .stagger-list li { animation: none; opacity: 0; transform: translateY(4px); }
+.replay.again .stagger-list li { animation: enter var(--dur-base) var(--ease-out) forwards; animation-delay: calc(var(--i) * 30ms); }
+/* 加载态：转圈 spinner（.8s）+ 骨架屏暖色微光脉冲（1.8s） */
+.load-demo { display: flex; flex-direction: column; gap: 12px; }
+.load-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); }
+.spinner {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+  flex: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.skeleton {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--bg-deep) 25%, var(--surface-solid) 50%, var(--bg-deep) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-lg);
+  padding: 12px 16px;
+}
+
+/* ---------- 动效降级：prefers-reduced-motion（动画全停、粒子静止微光） ---------- */
+html.reduce *, html.reduce *::before, html.reduce *::after {
+  animation: none !important;
+  transition: none !important;
+}
+html.reduce .blob { animation: none !important; opacity: .4; }
+html.reduce .css-particle { animation: none !important; opacity: .5; transform: none; }
+
+/* ---------- 氛围效果三档（body[data-fx]）：关 / 标准（CSS 粒子）/ 丰富（+canvas） ---------- */
+body[data-fx="off"] .blob,
+body[data-fx="off"] .noise,
+body[data-fx="off"] .css-particles { display: none; }
+body[data-fx="off"] #fx-canvas,
+body[data-fx="standard"] #fx-canvas { display: none; }
+
+footer.pagefoot { margin-top: var(--sp-section); text-align: center; color: var(--ink-3); font-size: 12.5px; }
+footer.pagefoot p { margin: 6px 0; }
+</style>
+</head>
+<body data-fx="standard">
+<!-- ============ 背景氛围层（纯装饰，aria-hidden，永不覆盖正文） ============ -->
+<div class="blob b1" aria-hidden="true"></div>
+<div class="blob b2" aria-hidden="true"></div>
+<div class="blob b3" aria-hidden="true"></div>
+<div class="noise" aria-hidden="true"></div>
+<div class="css-particles" aria-hidden="true">
+  <span class="css-particle" style="--sz:7px;  --dur:11s; --delay:0s;   --dx:3vw;  left:8%;"></span>
+  <span class="css-particle" style="--sz:5px;  --dur:14s; --delay:2s;   --dx:-4vw; left:16%;"></span>
+  <span class="css-particle" style="--sz:9px;  --dur:10s; --delay:4s;   --dx:2vw;  left:23%;"></span>
+  <span class="css-particle" style="--sz:6px;  --dur:16s; --delay:1s;   --dx:5vw;  left:31%;"></span>
+  <span class="css-particle" style="--sz:8px;  --dur:12s; --delay:5s;   --dx:-3vw; left:40%;"></span>
+  <span class="css-particle" style="--sz:5px;  --dur:15s; --delay:7s;   --dx:4vw;  left:48%;"></span>
+  <span class="css-particle" style="--sz:9px;  --dur:10s; --delay:3s;   --dx:-2vw; left:56%;"></span>
+  <span class="css-particle" style="--sz:6px;  --dur:13s; --delay:8s;   --dx:3vw;  left:63%;"></span>
+  <span class="css-particle" style="--sz:7px;  --dur:16s; --delay:2.5s; --dx:-5vw; left:71%;"></span>
+  <span class="css-particle" style="--sz:5px;  --dur:11s; --delay:6s;   --dx:2vw;  left:78%;"></span>
+  <span class="css-particle" style="--sz:8px;  --dur:14s; --delay:9s;   --dx:-3vw; left:85%;"></span>
+  <span class="css-particle" style="--sz:6px;  --dur:12s; --delay:4.5s; --dx:4vw;  left:92%;"></span>
+  <span class="css-particle" style="--sz:7px;  --dur:15s; --delay:10s;  --dx:-2vw; left:36%;"></span>
+  <span class="css-particle" style="--sz:5px;  --dur:13s; --delay:11s;  --dx:3vw;  left:60%;"></span>
+</div>
+<canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+<!-- ============ 顶栏：吸顶 64px + 主题/氛围分段标签（Claude category-tab） ============ -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><b>Continuity Studio</b> · 风格预览 v2（style preview）</div>
+    <div class="controls" role="group" aria-label="预览控制">
+      <div class="seg" role="group" aria-label="主题切换">
+        <button type="button" id="theme-sun" aria-pressed="true">暖阳奶油</button>
+        <button type="button" id="theme-forest" aria-pressed="false">森林夜语</button>
+      </div>
+      <div class="seg" role="group" aria-label="氛围效果">
+        <button type="button" id="fx-off" aria-pressed="false">氛围：关</button>
+        <button type="button" id="fx-standard" aria-pressed="true">标准</button>
+        <button type="button" id="fx-rich" aria-pressed="false">丰富</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+  <!-- ============ Hero：双语 + Claude 式 6/6 分栏（左文字右产品表面卡） ============ -->
+  <section class="hero">
+    <div>
+      <h1>让每段故事，都能安心回家。
+        <span class="en">Every story deserves a safe way home.</span>
+      </h1>
+      <p class="sub">本地优先的角色备份、诊断与修复工作台 —— 这里不是机器控制台，是一间有暖光、有萤火的数据小窝。
+        <span class="en">Local-first workspace for character backup, diagnosis &amp; repair.</span>
+      </p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary">开始体检</button>
+        <button type="button" class="btn btn-secondary">打开本地 Web UI</button>
+      </div>
+    </div>
+    <aside class="glass hero-card glass-pad" aria-label="输入原型演示">
+      <div class="card-kicker">产品表面 · 输入原型</div>
+      <div class="field">
+        <label class="field-label" for="composer-src">源目录（只读输入）</label>
+        <div class="composer">
+          <textarea id="composer-src" rows="1" placeholder="例如 D:\data\sillytavern\data"></textarea>
+          <button type="button" class="btn-send" aria-label="开始扫描（演示）">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="card-meta">composer「一个盒子」：focus-within 整盒高亮 · 发送钮 36px 圆形 · 焦点环 3px 强调色 15% 透明外环</p>
+    </aside>
+  </section>
+
+  <!-- ============ 区块：修复等级徽章 R0–R3（文字 + 图标双通道 · 色弱友好） ============ -->
+  <section class="section">
+    <h2>修复等级徽章（文字 + 图标双通道 · 色弱友好）</h2>
+    <p class="desc">Repair levels R0–R3：状态识别不只靠颜色，图标形状与文字标签同时承载含义。</p>
+    <div class="badge-grid">
+      <div class="badge b-r0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-5"/></svg>
+        <div><div class="b-title"><span class="lv">R0</span>自动修复</div><div class="b-text">确定性修复：依据明确规则，自动生成修复副本。</div></div>
+      </div>
+      <div class="badge b-r1">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.2"/><path d="M12 15.8h.01"/></svg>
+        <div><div class="b-title"><span class="lv">R1</span>需确认</div><div class="b-text">可推断修复：有证据但不唯一，必须由你确认。</div></div>
+      </div>
+      <div class="badge b-r2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2h5.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>
+        <div><div class="b-title"><span class="lv">R2</span>仅建议</div><div class="b-text">无法可靠恢复：不伪造数据，只给出人工建议。</div></div>
+      </div>
+      <div class="badge b-r3">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+        <div><div class="b-title"><span class="lv">R3</span>隔离</div><div class="b-text">不安全或不支持的内容：隔离处理，绝不执行。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块：按键层级与输入控件（Claude 几何演示） ============ -->
+  <section class="section">
+    <h2>按键层级与输入控件（Claude 几何）</h2>
+    <p class="desc">40px 高 · 8px 圆角 · 14px/500；hover 变深、press scale(.98)、无上浮；用 Tab 键聚焦查看 3px 焦点环。</p>
+    <div class="btn-row" style="margin-top:0">
+      <button type="button" class="btn btn-primary">开始体检</button>
+      <button type="button" class="btn btn-secondary">打开本地 Web UI</button>
+      <button type="button" class="btn btn-text">查看使用说明 ↗</button>
+      <button type="button" class="btn btn-icon" aria-label="搜索（演示）">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </button>
+      <button type="button" class="btn btn-danger">删除前双重确认（示例）</button>
+      <button type="button" class="btn btn-primary" disabled>暂不可用（禁用态）</button>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <label class="field-label" for="input-demo">源目录（只读输入）</label>
+        <input class="input" id="input-demo" type="text" placeholder="例如 D:\data\sillytavern\data">
+      </div>
+      <div class="field">
+        <label class="field-label" for="input-demo-disabled">禁用输入（示例）</label>
+        <input class="input" id="input-demo-disabled" type="text" value="恢复功能将在 W4 开放" disabled>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 区块：扫描报告示例（毛玻璃面板 + 等宽右对齐） ============ -->
+  <section class="section">
+    <h2>扫描报告示例（毛玻璃表格）</h2>
+    <p class="desc">关键数字与哈希用等宽字体右对齐；状态列颜色 + 图标双通道。</p>
+    <div class="glass glass-pad">
+      <table class="sample">
+        <thead>
+          <tr><th>文件</th><th>类型</th><th>大小</th><th>SHA-256（前 8 位）</th><th>状态</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono" style="text-align:left">characters/角色卡.json</td>
+            <td>character_card_json</td><td class="num">12.4 KB</td><td class="hash">3f9a…c2e1</td>
+            <td><span class="status st-ok"><span class="dot"></span>R0 已修复</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="text-align:left">chats/chat1.jsonl</td>
+            <td>chat_jsonl</td><td class="num">1.8 MB</td><td class="hash">77b1…09aa</td>
+            <td><span class="status st-warn"><span class="dot"></span>R1 需确认</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="text-align:left">worlds/world1.json</td>
+            <td>json</td><td class="num">8.2 KB</td><td class="hash">a1c3…77dd</td>
+            <td><span class="status st-suggest"><span class="dot"></span>R2 仅建议</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="text-align:left">unknown.bin</td>
+            <td>binary</td><td class="num">96 B</td><td class="hash">0e2f…b0c4</td>
+            <td><span class="status st-danger"><span class="dot"></span>R3 隔离</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 区块：动效节奏与加载态演示 ============ -->
+  <section class="section">
+    <h2>动效节奏与加载态（150/200ms · 骨架屏 · 转圈）</h2>
+    <p class="desc">列表 stagger 进场 30ms/项（单项 200ms）；骨架屏暖色微光脉冲 1.8s；点击「重播动效」再次演示。</p>
+    <div class="glass glass-pad" id="stagger-demo">
+      <ul class="stagger-list">
+        <li style="--i:0">扫描完成：<span class="mono">6</span> 个文件，一切安好。</li>
+        <li style="--i:1">发现 <span class="mono">2</span> 个同名角色卡，建议先备份再导入。</li>
+        <li style="--i:2">一个聊天疑似只剩开场白 —— 没关系，我们从备份里找找看。</li>
+        <li style="--i:3">1 个文件被隔离（R3），绝不执行其中的任何内容。</li>
+        <li style="--i:4">深度检查请打开本地 Web UI（127.0.0.1:8777）。</li>
+      </ul>
+    </div>
+    <div class="btn-row" style="margin-top:16px">
+      <button type="button" class="btn btn-secondary" id="replay-btn">重播动效</button>
+      <p class="note" id="motion-note">动效状态：正在检测系统偏好…</p>
+    </div>
+    <div class="glass glass-pad" style="margin-top:16px">
+      <div class="load-demo">
+        <div class="load-row"><span class="spinner" aria-hidden="true"></span>正在扫描（加载态示例）…</div>
+        <div class="skeleton" style="width:68%"></div>
+        <div class="skeleton" style="width:44%"></div>
+        <div class="skeleton" style="width:80%"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 页脚：零外部资源声明 + 字体回退栈与 vendoring 方案 ============ -->
+  <footer class="pagefoot">
+    <p>本页为纯静态风格预览 v2：CSS / JS 全部内联，噪点为 SVG feTurbulence data-URI，零外部资源、零依赖。</p>
+    <p>字体为系统近似回退栈 —— 标题：Cormorant Garamond / Lora → Georgia / 楷体；正文：Inter → Segoe UI / 苹方 / 微软雅黑；等宽：JetBrains Mono → Consolas。最终 vendoring 方案（全部 SIL OFL）：Cormorant Garamond、Inter、霞鹜文楷、Noto Sans SC、JetBrains Mono，待创始人审查后内置。</p>
+    <p>排版与交互骨架参照 Claude 网页端公开设计（claude.com / claude.ai）；暖色两主题保留自 docs/ui-design-direction.md；提取依据与冲突修订建议见 docs/frontend-design-notes.md。</p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+(function () {
+  var root = document.documentElement;
+  var body = document.body;
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  /* ---------- 主题切换（sun/forest）：改 <html data-theme>，同步按钮态与 canvas 粒子色 ---------- */
+  function setTheme(name) {
+    root.setAttribute("data-theme", name);
+    var sun = document.getElementById("theme-sun");
+    var forest = document.getElementById("theme-forest");
+    if (sun && forest) {
+      sun.setAttribute("aria-pressed", String(name === "sun"));
+      forest.setAttribute("aria-pressed", String(name === "forest"));
+    }
+    try { localStorage.setItem("cs-preview-theme", name); } catch (e) { /* 忽略存储不可用 */ }
+    updateCanvasColors();
+  }
+  var sunBtn = document.getElementById("theme-sun");
+  var forestBtn = document.getElementById("theme-forest");
+  if (sunBtn) { sunBtn.addEventListener("click", function () { setTheme("sun"); }); }
+  if (forestBtn) { forestBtn.addEventListener("click", function () { setTheme("forest"); }); }
+
+  /* ---------- 氛围效果三档：关 / 标准（CSS 粒子）/ 丰富（+canvas） ---------- */
+  function setFx(level) {
+    body.setAttribute("data-fx", level);
+    var off = document.getElementById("fx-off");
+    var std = document.getElementById("fx-standard");
+    var rich = document.getElementById("fx-rich");
+    if (off && std && rich) {
+      off.setAttribute("aria-pressed", String(level === "off"));
+      std.setAttribute("aria-pressed", String(level === "standard"));
+      rich.setAttribute("aria-pressed", String(level === "rich"));
+    }
+    try { localStorage.setItem("cs-preview-fx", level); } catch (e) { /* 忽略 */ }
+    syncCanvas();
+  }
+  var fxOff = document.getElementById("fx-off");
+  var fxStd = document.getElementById("fx-standard");
+  var fxRich = document.getElementById("fx-rich");
+  if (fxOff) { fxOff.addEventListener("click", function () { setFx("off"); }); }
+  if (fxStd) { fxStd.addEventListener("click", function () { setFx("standard"); }); }
+  if (fxRich) { fxRich.addEventListener("click", function () { setFx("rich"); }); }
+
+  /* ---------- canvas 粒子（丰富档：≤40 粒、rAF、页面隐藏真暂停、DPR 上限 2） ---------- */
+  var canvas = document.getElementById("fx-canvas");
+  var ctx = canvas ? canvas.getContext("2d") : null;
+  var particles = [];
+  var rafId = 0;
+  var canvasRunning = false;
+  var W = 0, H = 0;
+  var mouseX = -1, mouseY = -1;
+  var colors = ["#F2B25C", "#FFE0A3"];
+
+  /* 主题切换后从 CSS 变量重读粒子色（颜色全部由令牌驱动） */
+  function updateCanvasColors() {
+    var cs = getComputedStyle(root);
+    colors = [cs.getPropertyValue("--particle-a").trim(), cs.getPropertyValue("--particle-b").trim()];
+    for (var i = 0; i < particles.length; i++) {
+      particles[i].c = colors[i % 2];
+    }
+  }
+
+  function resizeCanvas() {
+    if (!canvas) { return; }
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    initParticles();
+  }
+
+  function initParticles() {
+    particles = [];
+    var n = window.innerWidth < 640 ? 16 : 40;   /* 移动 16 / 桌面 40 */
+    for (var i = 0; i < n; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: 1.5 + Math.random() * 2.5,
+        vy: -(0.12 + Math.random() * 0.3),
+        sway: Math.random() * Math.PI * 2,
+        swayV: 0.004 + Math.random() * 0.012,
+        o: 0.35 + Math.random() * 0.45,
+        c: colors[i % 2]
+      });
+    }
+  }
+
+  function drawFrame() {
+    if (document.hidden) { return; }   /* 页面隐藏：本帧直接返回，避免空转 */
+    ctx.clearRect(0, 0, W, H);
+    var px = (mouseX >= 0) ? (mouseX - W / 2) * 0.02 : 0;   /* 鼠标轻推视差 <10px */
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.sway += p.swayV;
+      p.y += p.vy;
+      p.x += Math.sin(p.sway) * 0.25 + px * 0.02;
+      if (p.y < -12) { p.y = H + 12; p.x = Math.random() * W; }
+      if (p.x < -12) { p.x = W + 12; }
+      if (p.x > W + 12) { p.x = -12; }
+      ctx.globalAlpha = p.o;
+      ctx.fillStyle = p.c;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    rafId = window.requestAnimationFrame(drawFrame);
+  }
+
+  function startCanvas() {
+    if (!ctx || canvasRunning) { return; }
+    resizeCanvas();
+    canvasRunning = true;
+    rafId = window.requestAnimationFrame(drawFrame);
+  }
+
+  function stopCanvas() {
+    if (rafId) { window.cancelAnimationFrame(rafId); rafId = 0; }
+    canvasRunning = false;
+  }
+
+  /* 仅「丰富」档且未开启减少动态偏好时运行 canvas */
+  function syncCanvas() {
+    var shouldRun = body.getAttribute("data-fx") === "rich" && !reduceMotion.matches;
+    if (shouldRun) { startCanvas(); } else { stopCanvas(); }
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { stopCanvas(); }        /* 页面隐藏：真暂停（性能预算） */
+    else { syncCanvas(); }
+  });
+  window.addEventListener("resize", function () {
+    if (canvasRunning) { resizeCanvas(); }
+  });
+  window.addEventListener("mousemove", function (e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+  window.addEventListener("mouseleave", function () {
+    mouseX = -1;
+    mouseY = -1;
+  });
+
+  /* ---------- prefers-reduced-motion：全局降级（光斑/粒子静止、动画全停） ---------- */
+  function applyReducedMotion() {
+    root.classList.toggle("reduce", reduceMotion.matches);
+    var note = document.getElementById("motion-note");
+    if (note) {
+      note.textContent = reduceMotion.matches
+        ? "动效状态：已检测到「减少动态效果」偏好 —— 光斑与粒子静止为微光点，动画全部降级。"
+        : "动效状态：未检测到减少动态偏好 —— 交互过渡 150ms / 出现动画 200ms；光斑缓慢漂移、粒子漂浮（可用上方「氛围效果」关闭）。";
+    }
+    syncCanvas();
+  }
+  if (typeof reduceMotion.addEventListener === "function") {
+    reduceMotion.addEventListener("change", applyReducedMotion);
+  }
+  applyReducedMotion();
+
+  /* ---------- 动效重播：先移除再重加 .again，强制回流以重启动画 ---------- */
+  var demo = document.getElementById("stagger-demo");
+  var replayBtn = document.getElementById("replay-btn");
+  if (replayBtn && demo) {
+    replayBtn.addEventListener("click", function () {
+      demo.classList.remove("again");
+      void demo.offsetWidth;
+      demo.classList.add("replay");
+      void demo.offsetWidth;
+      demo.classList.add("again");
+    });
+    demo.classList.add("replay", "again");
+  }
+
+  /* ---------- 恢复上次选择（localStorage 仅存主题/氛围档位，不存任何用户数据） ---------- */
+  var savedTheme = null, savedFx = null;
+  try {
+    savedTheme = localStorage.getItem("cs-preview-theme");
+    savedFx = localStorage.getItem("cs-preview-fx");
+  } catch (e) { /* 忽略 */ }
+  if (savedTheme === "forest" || savedTheme === "sun") { setTheme(savedTheme); }
+  if (savedFx === "off" || savedFx === "standard" || savedFx === "rich") { setFx(savedFx); }
+  syncCanvas();
+})();
+</script>
+</body>
+</html>

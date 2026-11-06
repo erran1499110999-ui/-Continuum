@@ -18,7 +18,11 @@ def json_bytes(obj: Any) -> bytes:
 
 
 def _enum_value(value: Any) -> Any:
-    """枚举 → .value 字符串；非枚举原样返回（None → null）。"""
+    """枚举 → .value 字符串；非枚举原样返回（None → null）。
+
+    引擎报告里的 FileKind/Severity/RepairLevel 都是 enum，json.dumps 无法直接
+    序列化——统一在此转字符串，UI 侧拿到的是纯 JSON 可消费值。
+    """
     return value.value if isinstance(value, Enum) else value
 
 

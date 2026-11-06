@@ -24,6 +24,10 @@ def manager():
 
 
 def wait_state(mgr, job_id, *, timeout=5.0):
+    """轮询等待任务进入终态（succeeded/failed），超时即失败。
+
+    所有测试用同一等待路径，避免各自 sleep+断言的时序写法不一致。
+    """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         snap = mgr.get(job_id)

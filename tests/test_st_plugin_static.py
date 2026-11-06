@@ -17,7 +17,7 @@ import pytest
 
 EXT_DIR = Path(__file__).resolve().parent.parent / "extensions" / "sillytavern" / "continuity-st"
 
-EXPECTED_FILES = {"manifest.json", "index.js", "checks.js", "style.css", "README.md"}
+EXPECTED_FILES = {"manifest.json", "index.js", "checks.js", "style.css", "README.md", "package.json"}
 
 _SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 
@@ -263,9 +263,31 @@ def test_js_no_network_apis(js_source):
         assert api not in src, f"{name} 使用网络 API {api}（MVP 契约：仅 window.open 唤起，零跨域调用）"
 
 
-def test_js_no_st_internal_module_imports(js_source):
+_IMPORT_SOURCE = re.compile(r"\bimport\s+(?:[^\"';]*?\s+from\s+)?[\"']([^\"']+)[\"']")
+
+
+def test_js_imports_only_relative_local_modules(js_source):
+    """P2 起 index.js 允许 import 插件自有模块（如 ./checks.js），
+    但只允许插件目录内的相对路径——绝不 import ST 内部模块或外部包。"""
     name, src = js_source
-    assert "import " not in src, f"{name} import ST 内部模块（契约：只依赖 getContext 与浏览器原生 API）"
+    sources = _IMPORT_SOURCE.findall(src)
+    for s in sources:
+        assert s.startswith("./"), f"{name} import 了非相对模块: {s!r}（契约：禁止 import ST 内部模块）"
+        assert ".." not in s, f"{name} import 逃出插件目录: {s!r}"
+        assert s.endswith(".js"), f"{name} import 了非 JS 文件: {s!r}"
+
+
+def test_js_no_st_script_imports(js_source):
+    """ST 内部入口（script.js）绝不能被插件 import（官方最佳实践：只用 getContext）。"""
+    name, src = js_source
+    assert "script.js" not in src, f"{name} 引用了 ST 内部模块 script.js"
+
+
+def test_js_no_r_level_judgments_in_code(js_source):
+    """R 级修复判定只由 Python 引擎给出——插件 JS 的实际代码中不得出现 R0–R3。"""
+    name, src = js_source
+    for token in ("R0", "R1", "R2", "R3"):
+        assert token not in src, f"{name} 代码中含 {token}（规则 4/9：插件只提示不判定）"
 
 
 # —— 回归（P1-1）：字符串/模板字面量不得被注释剥除误伤 ——
@@ -295,13 +317,39 @@ def test_index_js_contract():
     assert 'const VERSION = "0.1.0"' in src, "index.js 无版本常量"
 
 
-# —— checks.js 占位 ——
+# —— checks.js 契约（P2：H1–H5 纯函数已实现） ——
 
-def test_checks_js_placeholder():
+def test_checks_js_exports():
     src = _read("checks.js")
-    assert "P2" in src, "checks.js 应标注 P2 实现占位"
+    for fn in (
+        "buildSnapshot",
+        "checkIntegrity",
+        "checkResetChat",
+        "checkDuplicateNames",
+        "checkCardFields",
+        "checkMessageStructure",
+        "runChecks",
+    ):
+        assert f"export function {fn}" in src, f"checks.js 缺少导出: {fn}"
     assert "use strict" in src
     assert "无副作用" in src, "checks.js 应声明无副作用原则"
+
+
+def test_index_js_has_check_panel():
+    """P2 契约：面板含「开始体检」按钮，经 runChecks 渲染，全程 textContent。"""
+    src = _read("index.js")
+    assert "continuity-check-run" in src, "index.js 缺少体检按钮"
+    assert "runChecks" in src, "index.js 未调用 checks.js 的 runChecks"
+    assert "textContent" in src, "index.js 渲染必须使用 textContent（规则 3）"
+
+
+def test_package_json_declares_module():
+    """Node 需要 type=module 才能以 ESM 加载 checks.js（node:test 前置条件）。"""
+    p = EXT_DIR / "package.json"
+    assert p.is_file(), "缺少 package.json"
+    data = json.loads(p.read_text(encoding="utf-8"))
+    assert data.get("type") == "module"
+    assert data.get("private") is True
 
 
 # —— 双语 README 占位 ——

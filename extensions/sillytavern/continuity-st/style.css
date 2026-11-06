@@ -44,6 +44,58 @@
   line-height: 1.6;
 }
 
+.continuity-check-intro {
+  color: #9aa7b4;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.continuity-check-run {
+  width: 100%;
+  background: #4f9cf9;
+  color: #0b1220;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.continuity-check-run:hover {
+  filter: brightness(1.08);
+}
+
+.continuity-check-results {
+  font-size: 12.5px;
+}
+
+.continuity-check-summary {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.continuity-check-item {
+  border-top: 1px solid #2c3642;
+  padding: 6px 0;
+}
+
+.continuity-check-item-title {
+  font-weight: 600;
+}
+
+.continuity-check-item-detail {
+  color: #9aa7b4;
+  margin-top: 2px;
+}
+
+.continuity-check-note {
+  color: #9aa7b4;
+  border-top: 1px dashed #2c3642;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
 .hidden {
   display: none;
 }
