@@ -391,6 +391,27 @@ def test_settings_html_exists_no_keys_no_external():
     assert _no_external_urls(src), "settings.html 含外部 URL（规则 2：零外部资源）"
 
 
+# —— P5 契约：ping 探测 / 深链入口（含 auto=1 安全语义） ——
+
+def test_index_js_ping_probe_contract():
+    """P5：Image() 探测免 token 的 /api/ping；不读响应体、无需 CORS。"""
+    src = _read("index.js")
+    assert "new Image()" in src, "缺少 Image() 探测实现"
+    assert "/api/ping" in src, "探测端点不是 /api/ping"
+    assert "continuity-check-status" in src, "缺少服务状态显示元素"
+    assert "运行中" in src and "未运行" in src, "缺少运行中/未运行两态文案"
+
+
+def test_index_js_deep_link_contract():
+    """P5+Q13：三个深链按钮存在；auto=1 仅限急救备份/升级前备份，恢复绝不自动执行。"""
+    src = _read("index.js")
+    assert "急救备份" in src and "升级前备份" in src and "恢复" in src, "缺少深链入口按钮文案"
+    assert "#emergency?auto=1" in src, "急救备份深链缺少 auto=1"
+    assert "#backup?auto=1" in src, "升级前备份深链缺少 auto=1"
+    assert "#restore" in src, "恢复深链缺失"
+    assert "#restore?auto=1" not in src, "恢复深链不得携带 auto=1（Q13：必须人工确认目标目录）"
+
+
 # —— 双语 README（P4：完整上市版，占位全部移除） ——
 
 def test_readme_full_bilingual():

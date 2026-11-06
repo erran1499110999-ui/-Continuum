@@ -13,6 +13,9 @@
   标题字体栈为宋体系且不含楷体/霞鹜文楷（brief §四）；无粒子/光斑/装饰动画与
   预览演示文案（composer 等，brief §五/§七）；两主题语义令牌齐全且角色稳定（brief §七）；
   触控目标 ≥44px、断点 1024/768/480、reduced-motion（brief §八）；
+- 深链引导流程（路径 A）：#emergency/#backup/#restore 三页结构、API 端点、路由接线、
+  id 唯一性；Q12 安全细化——#restore 永不自动开始（须人工确认后手动点击），
+  auto=1 白名单仅 emergency/backup；
 - 安全断言只增强不弱化：app.js 剥除注释后仍禁 eval/innerHTML/document.write。
 
 边界说明：主题切换/扫描流程的「运行时行为」依赖浏览器环境，本文件只做结构级契约
@@ -431,6 +434,83 @@ def test_static_scan_business_logic_preserved(static_js):
     assert '"X-Continuity-Token"' in static_js, "app.js 缺少令牌头"
 
 
+# ============ 十四、深链引导流程契约（路径 A：#emergency / #backup / #restore） ============
+
+GUIDE_IDS = {
+    "emergency": ["emergency-form", "emergency-source", "emergency-output", "emergency-run", "emergency-state", "emergency-error", "emergency-result", "emergency-summary", "emergency-kv"],
+    "backup": ["backup-form", "backup-source", "backup-bundle", "backup-run", "backup-state", "backup-error", "backup-result", "backup-summary", "backup-kv"],
+    "restore": ["restore-form", "restore-bundle", "restore-dest", "restore-run", "restore-state", "restore-error", "restore-result", "restore-summary", "restore-kv"],
+}
+
+
+@pytest.mark.parametrize("flow", ["emergency", "backup", "restore"])
+def test_static_guide_pages_hidden_by_default(static_html, flow):
+    """三个引导页默认隐藏，由 hash 路由切换显示（不占用默认首页）。"""
+    assert f'id="page-{flow}" class="page guide hidden"' in static_html, f"引导页 {flow} 缺少或未默认隐藏"
+
+
+@pytest.mark.parametrize("flow", ["emergency", "backup", "restore"])
+def test_static_guide_form_ids(static_html, flow):
+    """每个引导流程的 DOM id 完整（app.js wireGuide 按 flowName-id 约定取元素）。"""
+    for el in GUIDE_IDS[flow]:
+        assert f'id="{el}"' in static_html, f"引导流程 {flow} 缺少元素: {el}"
+
+
+def test_static_guide_api_endpoints(static_js):
+    """深链流程对应后端契约端点（docs/plugin-viability-plan.md，勿改后端）。"""
+    for ep in ("/api/jobs/emergency-backup", "/api/jobs/backup", "/api/jobs/restore"):
+        assert ep in static_js, f"app.js 缺少端点: {ep}"
+    assert static_js.count('"X-Continuity-Token"') >= 1, "app.js 未使用令牌头"
+
+
+def test_static_guide_routing_wired(static_js):
+    """hash 路由与流程接线齐全（路由仅切换页面，不直接执行任务）。"""
+    assert "routeFromHash" in static_js, "缺少 routeFromHash()"
+    assert "hashchange" in static_js, "缺少 hashchange 监听"
+    assert "wireGuide" in static_js, "缺少 wireGuide()"
+    assert "renderGuideResult" in static_js, "缺少 renderGuideResult()"
+    assert "HASH_PAGES" in static_js, "缺少深链页面白名单"
+
+
+def test_static_restore_never_auto_starts(static_js, static_html):
+    """Q12 安全细化：#restore 永不自动开始——人工确认目标目录并手动点击。"""
+    assert 'name !== "restore"' in static_js, "深链自动开始未把 restore 排除在外"
+    assert "任何情况下都不自动执行恢复" in static_js, "restore 的自动执行禁令未在代码注释中明确"
+    assert '"restore-form"' not in static_js, "tryAutoStart 不应引用 restore-form（wireGuide 用拼接 id 接线，字面引用即违规）"
+    assert 'id="restore-run"' in static_html, "恢复页缺少手动提交按钮"
+    assert 'type="submit"' in static_html, "恢复页提交按钮类型错误"
+    assert "绝不覆盖任何现有数据" in static_html, "恢复文案缺少「绝不覆盖任何现有数据」"
+    assert "本页不会自动执行任何恢复操作" in static_html, "恢复页缺少「不会自动执行」说明"
+
+
+def test_static_autostart_whitelist(static_js):
+    """auto=1 白名单仅 emergency/backup（emergency 无输入直接提交；backup 双字段齐全才提交）。"""
+    assert "auto=1" in static_js, "缺少 auto=1 深链参数处理"
+    assert '"emergency-form"' in static_js, "emergency 自动开始未接线"
+    assert '"backup-form"' in static_js, "backup 自动开始未接线"
+
+
+def test_static_guide_copy_honest(static_html):
+    """引导文案为真实能力描述、不夸大（规则：不伪造无法恢复的数据）。只审引导区块。"""
+    m = re.search(r'(?s)<section id="page-emergency".*?<section id="page-verify"', static_html)
+    guide = m.group(0) if m else ""
+    assert guide, "未找到深链引导区块"
+    assert "全程只读打包，不改动任何原文件" in guide, "急救备份缺少只读承诺"
+    assert "原文件只读，绝不改动" in guide, "备份缺少只读承诺"
+    assert "服务仅在本机运行" in guide, "缺少本机运行说明"
+    # 后端 emergency-backup 要求显式 source/output，不得宣称「自动探测」
+    assert "自动探测" not in guide, "文案宣称自动探测数据目录，与后端契约不符"
+    for bad in ("保证", "一键修复", "自动修复所有"):
+        assert bad not in guide, f"引导文案出现夸大措辞: {bad}"
+
+
+def test_static_index_unique_ids(static_html):
+    """页面 id 必须唯一（深链/表单切换依赖唯一 id，防重复区块回归）。"""
+    ids = re.findall(r'id="([^"]+)"', static_html)
+    dupes = sorted({i for i in ids if ids.count(i) > 1})
+    assert not dupes, f"产品页存在重复 id: {dupes}"
+
+
 @pytest.mark.parametrize(
     "cls",
     [
@@ -441,7 +521,7 @@ def test_static_scan_business_logic_preserved(static_js):
         "hero-actions", "levels", "level", "level-list", "level-tag",
         "level-icon", "level-body", "level-head", "level-name", "level-desc",
         "section-title", "section-desc", "form-actions", "scan-summary",
-        "pledge", "brand", "info-block",
+        "pledge", "brand", "info-block", "guide", "steps", "guide-desc",
     ],
 )
 def test_static_style_css_contract(static_css, cls):

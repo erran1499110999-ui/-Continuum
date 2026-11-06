@@ -116,3 +116,59 @@
   **Noto Sans SC**（正文，SIL OFL 1.1），放入 `src/continuity/webui/static/fonts/` 并走
   AGENTS.md 依赖审查流程（逐项经创始人审查）；CSP 需同步放行 `font-src 'self'`。
 - 本轮零新依赖、零新资源、零网络请求——无其他待审批项。
+
+---
+
+## 9. 深链引导流程（创始人路径 A）交付补充（2026-11-07）
+
+### 9.1 修改文件及职责
+
+| 文件 | 职责 |
+|---|---|
+| `src/continuity/webui/static/index.html` | 新增 `#page-emergency`（急救备份）、把 `#page-backup`/`#page-restore` 占位页升级为真实引导页；三页默认隐藏，hash 路由切换显示；全部复用既有组件类（form/field/input/btn/state/error/tip/kv），新增仅 `.guide/.steps/.guide-desc` 三处结构样式（步骤序号为静态 CSS 计数器，无任何动效） |
+| `src/continuity/webui/static/app.js` | 新增深链路由（`#emergency/#backup/#restore`，兼容 `#w=xxx&auto=1` 写法）、`wireGuide` 三流程接线、`renderGuideResult` 通用安全结果渲染；把扫描轮询重构为通用 `pollJob(jobId, opts)`（扫描行为不变） |
+| `tests/test_webui_frontend_static.py` | 新增 15 项深链契约断言（见 9.5），既有断言一项未弱化 |
+| `docs/frontend-redesign-delivery.md` | 本补充章节 |
+
+### 9.2 API 契约（以 src/continuity/webui/server.py 实际实现为准）
+
+| 深链 | 端点 | 载荷 | 结果要点 |
+|---|---|---|---|
+| `#emergency` | POST /api/jobs/emergency-backup | `{source, output}` | `bundle` + `manifest` + `verify` 可恢复性自检 |
+| `#backup` | POST /api/jobs/backup | `{source, bundle}` | `bundle` + `manifest` |
+| `#restore` | POST /api/jobs/restore | `{bundle, dest}` | `restored/ok/errors/warnings/extra_files` 校验报告 |
+
+> **与早期规划文档的差异（已按「以代码为准」对齐）**：docs/plugin-viability-plan.md 曾写
+> emergency-backup「自动探测 data 目录、无入参」；后端实际实现要求显式 `{source, output}`。
+> 前端据此增加两个输入字段，文案不宣称「自动探测」（测试 `test_static_guide_copy_honest` 固化）。
+> 自动探测能力如后续上线，由 developer 改端点，前端再删输入。
+
+### 9.3 Q12 安全细化（restore 永不自动开始）
+
+- `#restore` 深链**只切换页面，绝不自动执行**：进入后必须由用户人工确认「备份包 + 目标目录」并手动点击「开始恢复」；页面明示「恢复输出到新目录，绝不覆盖任何现有数据」「本页不会自动执行任何恢复操作」。
+- `auto=1` 白名单仅 `#emergency` / `#backup`，且**仅在全部必填目录均已填写时**才自动提交；存在空白字段时只聚焦第一个空白字段引导填写，绝不带空值自动提交（`tryAutoStart`）。
+- 代码注释与测试断言双固化：`name !== "restore"` 排除 + 「任何情况下都不自动执行恢复」注释 + `"restore-form"` 字面引用禁用断言。
+
+### 9.4 结果渲染（安全 + 可读）
+
+- 全部 textContent/节点 API 构建，无 innerHTML/eval（延续规则 3 纪律）；
+- 输出路径优先入摘要；后端未带路径时回退展示用户填写的目标目录；
+- 标量字段 → 中文标签键值行（`已恢复文件数/校验通过/自检·不一致文件数` 等，未知字段回退原名）；
+- 布尔 → 「是/否」；`verify` 自检对象扁平一层；字符串数组（errors/warnings 等）→ 标题 + 列表；
+- 错误全程透传（400 校验文案、409 忙碌、任务 failed 文案原样显示于 role=alert 错误框）。
+
+### 9.5 测试结果（真实运行）
+
+- 新增断言：三页默认隐藏与 DOM id 完整（含 emergency-source/output）；端点与令牌头；路由/接线函数；
+  Q12 restore 永不自动执行（4 项）；auto=1 白名单；文案真实性（含「不得宣称自动探测」）；
+  **页面 id 唯一性**（防重复区块回归，修复过程实际抓到并消除了两处重复的旧恢复占位页）。
+- `node --check app.js` 通过；`tests/test_webui_frontend_static.py` 141 passed；
+  全套 pytest **400 passed + 1 skipped（401 collected）**，零失败（developer 后端 P5 测试已同步全过）。
+
+### 9.6 已知限制
+
+1. 沙箱无浏览器：hash 路由/深链直达/auto=1 聚焦与提交属运行时行为，结构级契约已测，
+   真实交互需浏览器或 ST 插件真机验证（QA 三轮审核范围）。
+2. emergency/backup 的 auto=1 在目录为空时只聚焦不提交——安全优先的刻意行为，插件侧如需
+   「完全自动」须先获得目录参数（深链传参契约待定，本前端不猜测字段格式，规则 9）。
+3. 结果渲染对后端新增字段自适应（未知标量/字符串数组均能展示），但嵌套对象仅展开 verify 一层。

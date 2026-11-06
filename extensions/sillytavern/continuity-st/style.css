@@ -145,6 +145,14 @@
   margin-top: 2px;
 }
 
+.continuity-check-status {
+  color: var(--cs-ink-2);
+  font-size: 12px;
+  border-top: 1px solid var(--cs-border);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
 .continuity-check-note {
   color: var(--cs-ink-2);
   border-top: 1px dashed var(--cs-border);

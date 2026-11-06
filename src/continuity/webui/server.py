@@ -14,13 +14,21 @@ import secrets
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Dict, Optional
 from urllib.parse import urlsplit
 
 from .. import __version__
 from . import api as api_module
 from .jobs import JobManager, JobQueueFullError
-from .validation import MAX_BODY_BYTES, ValidationError, host_is_allowed, parse_json_body, require_source_dir
+from .validation import (
+    MAX_BODY_BYTES,
+    ValidationError,
+    host_is_allowed,
+    parse_json_body,
+    require_new_output_dir,
+    require_path,
+    require_source_dir,
+)
 from .views import json_bytes
 
 logger = logging.getLogger("continuity.webui")
@@ -241,6 +249,11 @@ class _Handler(BaseHTTPRequestHandler):
         return data
 
     def _serve_api(self, path: str) -> None:
+        # /api/ping 免 token：只返回固定健康状态，供 ST 插件用 Image() 探测本机服务。
+        # Host 白名单与安全头仍在 _route 中先行生效；不加任何 CORS 头（探测不需读响应体）。
+        if path == "/api/ping" and self.command == "GET":
+            self._send_json(200, api_module.ping())
+            return
         if not self._token_ok():
             self._send_json(403, {"error": "缺少或错误的访问令牌", "kind": "TokenError"})
             return
@@ -253,24 +266,26 @@ class _Handler(BaseHTTPRequestHandler):
         if path == "/api/jobs/scan" and self.command == "POST":
             self._handle_scan()
             return
+        if path == "/api/jobs/backup" and self.command == "POST":
+            self._handle_backup()
+            return
+        if path == "/api/jobs/emergency-backup" and self.command == "POST":
+            self._handle_emergency_backup()
+            return
+        if path == "/api/jobs/restore" and self.command == "POST":
+            self._handle_restore()
+            return
         if path.startswith("/api/jobs/") and self.command == "GET":
             self._handle_job_status(path[len("/api/jobs/"):])
             return
         self._send_json(404, {"error": "未找到该接口", "kind": "NotFound"})
 
-    # —— job 端点（W2：scan）——
+    # —— job 端点（W2：scan；P5：backup / emergency-backup / restore） ——
 
-    def _handle_scan(self) -> None:
+    def _submit_job(self, worker: Callable[[], Dict[str, Any]]) -> None:
+        """把工作函数提交到串行任务队列，统一映射 409（忙碌）/503（停止）/202。"""
         try:
-            body = parse_json_body(self._read_body())
-            source = require_source_dir(body.get("source"))
-        except ValidationError as exc:
-            self._send_json(400, {"error": str(exc), "kind": "ValidationError"})
-            return
-        try:
-            job_id = self.server.webui.jobs.submit(
-                lambda: api_module.scan_worker(str(source), log=self.server.webui.jobs.log)
-            )
+            job_id = self.server.webui.jobs.submit(worker)
         except JobQueueFullError as exc:
             # 串行任务忙碌：按计划返回 409 提示等待（不再无限排队）
             self._send_json(409, {"error": str(exc), "kind": "JobsBusy"})
@@ -279,6 +294,72 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json(503, {"error": str(exc), "kind": "JobsError"})
             return
         self._send_json(202, {"job_id": job_id})
+
+    def _handle_scan(self) -> None:
+        try:
+            body = parse_json_body(self._read_body())
+            source = require_source_dir(body.get("source"))
+        except ValidationError as exc:
+            self._send_json(400, {"error": str(exc), "kind": "ValidationError"})
+            return
+        self._submit_job(
+            lambda: api_module.scan_worker(str(source), log=self.server.webui.jobs.log)
+        )
+
+    def _handle_backup(self) -> None:
+        try:
+            body = parse_json_body(self._read_body())
+            source = require_source_dir(body.get("source"))
+            bundle = require_new_output_dir(body.get("bundle"), source=str(source))
+            # 可选来源客户端信息：仅作 manifest 元数据；非字符串值（含控制字符）一律拒绝
+            source_client = body.get("source_client")
+            source_client_version = body.get("source_client_version")
+            for key, value in (
+                ("source_client", source_client),
+                ("source_client_version", source_client_version),
+            ):
+                if value is not None:
+                    require_path(value, name=key)
+        except ValidationError as exc:
+            self._send_json(400, {"error": str(exc), "kind": "ValidationError"})
+            return
+        self._submit_job(
+            lambda: api_module.backup_worker(
+                str(source),
+                str(bundle),
+                source_client=source_client,
+                source_client_version=source_client_version,
+                log=self.server.webui.jobs.log,
+            )
+        )
+
+    def _handle_emergency_backup(self) -> None:
+        try:
+            body = parse_json_body(self._read_body())
+            source = require_source_dir(body.get("source"))
+            output = require_new_output_dir(body.get("output"), source=str(source))
+        except ValidationError as exc:
+            self._send_json(400, {"error": str(exc), "kind": "ValidationError"})
+            return
+        self._submit_job(
+            lambda: api_module.emergency_backup_worker(
+                str(source), str(output), log=self.server.webui.jobs.log
+            )
+        )
+
+    def _handle_restore(self) -> None:
+        try:
+            body = parse_json_body(self._read_body())
+            bundle = require_source_dir(body.get("bundle"))
+            dest = require_new_output_dir(body.get("dest"), source=str(bundle))
+        except ValidationError as exc:
+            self._send_json(400, {"error": str(exc), "kind": "ValidationError"})
+            return
+        self._submit_job(
+            lambda: api_module.restore_worker(
+                str(bundle), str(dest), log=self.server.webui.jobs.log
+            )
+        )
 
     def _handle_job_status(self, job_id: str) -> None:
         snap = self.server.webui.jobs.get(job_id)

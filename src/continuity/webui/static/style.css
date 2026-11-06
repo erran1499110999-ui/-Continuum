@@ -310,7 +310,37 @@ h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 600; }
   margin-top: 48px;
 }
 
-/* ========== 14. 响应式：1024 / 768 / 480（覆盖 390/320 手机） ========== */
+/* ========== 15. 深链引导流程页（#emergency/#backup/#restore，ST 插件入口）
+   复用全部既有令牌与组件类；步骤序号为静态内容，无任何装饰动效。 ========== */
+.guide { max-width: 720px; }                  /* 引导流程限宽，便于逐行阅读 */
+.guide-desc { color: var(--text-secondary); font-size: 14px; margin: 0 0 14px; max-width: 44em; }
+.steps {
+  counter-reset: step;                       /* 步骤序号：CSS 计数器，静态内容 */
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 14px;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  color: var(--text);
+  text-align: center;
+  font-size: 12px;
+}
+
+/* ========== 16. 响应式：1024 / 768 / 480（覆盖 390/320 手机） ========== */
 @media (min-width: 768px) {
   /* 桌面/平板：R0-R3 两列 2×2，由可用宽度决定 */
   .level-list { display: grid; grid-template-columns: 1fr 1fr; }
@@ -341,7 +371,7 @@ h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 600; }
   .hero-work { padding: 16px 14px 12px; }
 }
 
-/* ========== 15. 动效降级：prefers-reduced-motion（只停状态动效，不用 !important） ========== */
+/* ========== 17. 动效降级：prefers-reduced-motion（只停状态动效，不用 !important） ========== */
 @media (prefers-reduced-motion: reduce) {
   body { transition: none; }
   .btn, .nav-btn, .input { transition: none; }

@@ -159,6 +159,76 @@ import { runChecks } from "./checks.js";
   }
 
   /**
+   * 服务存活探测：用 Image() 加载 http://127.0.0.1:<port>/api/ping。
+   * 选择 Image() 而非 fetch：跨域探测不需要读响应体、不需要 CORS 头，
+   * 成功（onload）即「服务在运行」；失败（onerror）即「未运行」。
+   * 探测对象是免 token 的 ping 端点，其响应只含 {"status":"ok"}（无版本指纹）。
+   */
+  function probeWebUIStatus() {
+    const statusEl = document.getElementById("continuity-check-status");
+    const ctx = getContextSafe();
+    const settings = getSettings(ctx);
+    const url = "http://127.0.0.1:" + settings.port + "/api/ping";
+    if (statusEl) {
+      statusEl.textContent = "服务状态：检测中…";
+    }
+    const img = new Image();
+    let done = false;
+    const finish = function (ok) {
+      if (done || !statusEl) {
+        return;
+      }
+      done = true;
+      statusEl.textContent = ok
+        ? "服务状态：运行中（127.0.0.1:" + settings.port + "）"
+        : "服务状态：未运行——请先运行 python -m continuity.webui（端口 " + settings.port + "）。";
+    };
+    img.onload = function () {
+      finish(true);
+    };
+    img.onerror = function () {
+      finish(false);
+    };
+    img.src = url;
+  }
+
+  /**
+   * 深链跳转：把用户带到本地 Web UI 的对应页面。
+   * auto=1 语义（Q13）：仅允许「急救备份/升级前备份」自动开始（页面自动发起任务）；
+   * 「恢复」绝不带 auto=1——恢复目标目录必须由用户人工确认后再点开始。
+   */
+  function openDeepLink(kind) {
+    const ctx = getContextSafe();
+    const settings = getSettings(ctx);
+    let hash = "";
+    if (kind === "emergency") {
+      hash = "#emergency?auto=1";
+    } else if (kind === "backup") {
+      hash = "#backup?auto=1";
+    } else if (kind === "restore") {
+      hash = "#restore"; // 无 auto=1：人工确认目标目录后才允许执行
+    } else {
+      hash = "";
+    }
+    window.open(
+      "http://127.0.0.1:" + settings.port + "/" + hash,
+      "_blank",
+      "noopener"
+    );
+    if (settings.showHints) {
+      const note = document.getElementById("continuity-check-note");
+      if (note) {
+        note.classList.remove("hidden");
+        note.textContent =
+          "若新标签页未打开，请先运行 python -m continuity.webui（端口 " +
+          settings.port +
+          "）。";
+      }
+    }
+    probeWebUIStatus(); // 跳转后刷新状态显示
+  }
+
+  /**
    * 一键唤起本地 Web UI：新标签页打开首页，token 由服务器注入的页面自取自用，
    * 插件零接触、零存储（见 docs/st-plugin-plan.md 6.3）。
    * 本轮仅 window.open：无法探测服务是否在运行，故始终附一句友好提示。
@@ -181,6 +251,7 @@ import { runChecks } from "./checks.js";
           "）。";
       }
     }
+    probeWebUIStatus();
   }
 
   /** 展开面板并执行一次体检（slash command 触发路径）。 */
@@ -280,6 +351,35 @@ import { runChecks } from "./checks.js";
     openButton.addEventListener("click", openWebUI);
     body.appendChild(openButton);
 
+    // P5 深链入口：急救备份/升级前备份（可自动开始）与恢复（必须人工确认目标）
+    const deepLinks = [
+      { id: "continuity-check-emergency", label: "急救备份（一键）", kind: "emergency" },
+      { id: "continuity-check-backup", label: "升级前备份", kind: "backup" },
+      { id: "continuity-check-restore", label: "恢复（需人工确认）", kind: "restore" },
+    ];
+    for (const entry of deepLinks) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = entry.id;
+      btn.className = "continuity-check-open";
+      btn.textContent = entry.label;
+      btn.addEventListener(
+        "click",
+        (function (kind) {
+          return function () {
+            openDeepLink(kind);
+          };
+        })(entry.kind)
+      );
+      body.appendChild(btn);
+    }
+
+    const statusLine = document.createElement("div");
+    statusLine.id = "continuity-check-status";
+    statusLine.className = "continuity-check-status";
+    statusLine.textContent = "服务状态：尚未检测";
+    body.appendChild(statusLine);
+
     const results = document.createElement("div");
     results.id = "continuity-check-results";
     results.className = "continuity-check-results";
@@ -294,6 +394,10 @@ import { runChecks } from "./checks.js";
 
     badge.addEventListener("click", function () {
       panel.classList.toggle("hidden");
+      // 每次展开面板时刷新服务状态（Image 探测，零开销）
+      if (!panel.classList.contains("hidden")) {
+        probeWebUIStatus();
+      }
     });
 
     document.body.appendChild(badge);
@@ -327,6 +431,7 @@ import { runChecks } from "./checks.js";
       }
     }
     registerSlashCommand();
+    probeWebUIStatus(); // 启动即探测一次，面板状态行有据可依
   }
 
   const context = getContextSafe();

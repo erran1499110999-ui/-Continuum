@@ -89,6 +89,24 @@
 - 待验证项同步：JS 单测的真实运行证据链（Node 实测）在 P2 前置门补齐；真实样本缺口靠 12 章「3 样本」
   门槛推进，不因合成样本齐全而放松。
 
+## 批次 3（2026-11-07）
+
+| # | 类别 | 条目 | 来源+日期 | 用途 | 许可证 | 可落地动作 | 优先级 | 受益 agent |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 技术依据 | **ST `default/config.yaml` 与 `src/constants.js` 的 USER_DIRECTORY_TEMPLATE**（1.12+ 用户目录结构权威定义，含 group chats/User Avatars 空格目录名、多用户 data/_storage） | [TavernWeave D4 手册](https://github.com/liarmttt/tavernweave/blob/f9863d2b05305457fe9ed8b0c5688d52aca400a5/skills/consult-tavernweave-library/references/st-guides/D4_ST%E6%95%B0%E6%8D%AE%E7%9B%AE%E5%BD%95%E4%B8%8E%E9%83%A8%E7%BD%B2%E8%BF%90%E7%BB%B4.md)（2026-11） | W3' 一键急救备份「自动探测 data 目录」的结构依据（空格目录、多用户句柄枚举） | 上游 AGPL（仅参考结构） | developer 实现自动探测时按此清单覆盖目录与引号处理 | 高 | developer |
+| 2 | 流程机制 | **ST 1.20 动向跟踪机制**：GitHub releases 页每周快照 + newreleases.io 订阅 | [releases](https://github.com/SillyTavern/SillyTavern/releases)、[newreleases.io](https://newreleases.io/project/github/SillyTavern/SillyTavern) | 把「版本漂移监控」制度化（research-st-plugin 每 release 冒烟的前置） | — | lead 建每周例行项；researcher 在 business-feed 记录影响 | 中 | lead / researcher |
+| 3 | 审批材料 | **Noto Serif SC vendoring 申请单预写**（名称/OFL 许可证/文件体积/回退策略/影响范围） | [Google Fonts](https://fonts.google.com/noto/specimen/Noto+Serif+SC) | brief 四：本轮用系统回退，新字体只记录建议与许可证需求 | OFL | frontend 预写申请单交创始人；**未批准前不下载** | 中 | frontend-developer |
+| 4 | 排版参考 | **MDN `text-wrap: balance/pretty`**：标题平衡断行与正文流式换行（Claude 排版惯例的标准实现） | [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/text-wrap) | brief 三「避免标题孤字掉行」的零依赖实现 | 文档 | frontend 用于中文标题断行（配合宋体系无负字距） | 低 | frontend-developer |
+| 5 | 合规归档 | **中国证监会 2026-02-06 银发〔2026〕42 号**（虚拟货币相关业务风险边界） | [csrc.gov.cn](https://www.csrc.gov.cn/csrc/c100028/c7614318/content.shtml)（企划书附录已引） | 规则 8 的监管依据归档；对外文案合规红线的引用源 | 官方文件 | 无动作，仅供合规引用（延续「不做加密交易」红线） | 低 | 全体 |
+
+### 第 4 篇｜性能与可访问性（2026-11-07）
+- 观察：零构建栈本身轻量，真实性能风险在三个点：① 大目录扫描/备份是引擎长任务（Web UI 需任务化+进度，
+  不能阻塞）；② 大 JSONL 渲染（CASE-12 教训：酒馆官方列表加载 >1 分钟，RRA 用「读尾部 100KB」解决）；
+  ③ brief 八的可访问性要求（reduced-motion、键盘焦点、对比度）目前只有规范、没有固定检查项。
+- **可落地建议（1 条）**：frontend 大列表采用「视口渲染 + 尾部优先」策略（借鉴 RRA tail-read 先例），
+  qa 把「prefers-reduced-motion 与键盘焦点可见性」列入三轮审核第 2 轮固定检查项。受益 agent：
+  frontend-developer（实现）、qa-reviewer（审计项）。
+
 ---
 
 ## 待办备注
