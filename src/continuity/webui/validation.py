@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-_MAX_BODY_BYTES = 64 * 1024  # API 请求体上限（路径等参数远小于此值）
+MAX_BODY_BYTES = 64 * 1024  # API 请求体上限（路径等参数远小于此值）
 
 _ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
 
@@ -66,7 +66,7 @@ def host_is_allowed(host_header: str) -> bool:
     return host.lower() in _ALLOWED_HOSTS
 
 
-def parse_json_body(data: bytes, *, max_bytes: int = _MAX_BODY_BYTES) -> dict:
+def parse_json_body(data: bytes, *, max_bytes: int = MAX_BODY_BYTES) -> dict:
     """把请求体解析为 JSON 对象；超限/非法/非对象一律 ValidationError。"""
     if not isinstance(data, (bytes, bytearray)) or not data:
         raise ValidationError("请求体为空")

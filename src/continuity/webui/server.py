@@ -18,7 +18,8 @@ from urllib.parse import urlsplit
 
 from .. import __version__
 from . import api as api_module
-from .validation import host_is_allowed
+from .jobs import JobManager
+from .validation import MAX_BODY_BYTES, ValidationError, host_is_allowed, parse_json_body, require_source_dir
 from .views import json_bytes
 
 logger = logging.getLogger("continuity.webui")
@@ -57,7 +58,7 @@ class WebUIServer:
 
     def __init__(
         self,
-        port: int = 8765,
+        port: int = 8777,  # 默认端口（创始人裁决：原 8765 被百度输入法常驻占用）
         *,
         token: Optional[str] = None,
         static_dir: Optional[Path] = None,
@@ -65,6 +66,7 @@ class WebUIServer:
         self.token = token or secrets.token_urlsafe(32)
         self.static_dir = (static_dir or STATIC_DIR).resolve()
         self.index_bytes = (self.static_dir / "index.html").read_bytes()
+        self.jobs = JobManager()  # 后台任务队列（W2 起：scan 等长任务串行执行）
         self.httpd = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
         self.httpd.daemon_threads = True
         self.httpd.webui = self  # type: ignore[attr-defined]  处理器经此访问配置
@@ -78,10 +80,15 @@ class WebUIServer:
             "本地 Web UI 已启动: http://127.0.0.1:%d（仅本机可访问，不上传任何数据）",
             self.port,
         )
+        self._serving = True
         self.httpd.serve_forever()
 
     def shutdown(self) -> None:
-        self.httpd.shutdown()
+        # 仅当 serve_forever 真的在跑时才需要 shutdown() 解锁其循环；
+        # 从未启动过服务时调用 shutdown() 会永久阻塞，必须跳过。
+        if getattr(self, "_serving", False):
+            self.httpd.shutdown()
+        self.jobs.stop(timeout=5.0)  # 先停接客再收任务线程，保证任务完整收口
         self.httpd.server_close()
 
 
@@ -192,6 +199,22 @@ class _Handler(BaseHTTPRequestHandler):
         except TypeError:  # 非 ASCII 令牌直接拒绝
             return False
 
+    def _read_body(self) -> bytes:
+        """按 Content-Length 读取请求体（上限 MAX_BODY_BYTES，防超大请求）。"""
+        raw = self.headers.get("Content-Length", "")
+        try:
+            length = int(raw)
+        except ValueError:
+            raise ValidationError("Content-Length 缺失或非法") from None
+        if length < 0:
+            raise ValidationError("Content-Length 非法")
+        if length > MAX_BODY_BYTES:
+            # 响应后立即断开：未读的超限请求体绝不能污染下一条请求的解析
+            self.close_connection = True
+            raise ValidationError(f"请求体超过上限 {MAX_BODY_BYTES} 字节")
+        data = self.rfile.read(length)
+        return data
+
     def _serve_api(self, path: str) -> None:
         if not self._token_ok():
             self._send_json(403, {"error": "缺少或错误的访问令牌", "kind": "TokenError"})
@@ -202,4 +225,35 @@ class _Handler(BaseHTTPRequestHandler):
         if path == "/api/version" and self.command == "GET":
             self._send_json(200, api_module.version())
             return
+        if path == "/api/jobs/scan" and self.command == "POST":
+            self._handle_scan()
+            return
+        if path.startswith("/api/jobs/") and self.command == "GET":
+            self._handle_job_status(path[len("/api/jobs/"):])
+            return
         self._send_json(404, {"error": "未找到该接口", "kind": "NotFound"})
+
+    # —— job 端点（W2：scan）——
+
+    def _handle_scan(self) -> None:
+        try:
+            body = parse_json_body(self._read_body())
+            source = require_source_dir(body.get("source"))
+        except ValidationError as exc:
+            self._send_json(400, {"error": str(exc), "kind": "ValidationError"})
+            return
+        try:
+            job_id = self.server.webui.jobs.submit(
+                lambda: api_module.scan_worker(str(source), log=self.server.webui.jobs.log)
+            )
+        except RuntimeError as exc:  # 队列已停止
+            self._send_json(503, {"error": str(exc), "kind": "JobsError"})
+            return
+        self._send_json(202, {"job_id": job_id})
+
+    def _handle_job_status(self, job_id: str) -> None:
+        snap = self.server.webui.jobs.get(job_id)
+        if snap is None:
+            self._send_json(404, {"error": "未找到该任务", "kind": "NotFound"})
+            return
+        self._send_json(200, snap)

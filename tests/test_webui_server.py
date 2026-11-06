@@ -84,7 +84,7 @@ def test_host_whitelist_rejects_foreign_host(webui):
 
 
 def test_host_whitelist_rejects_other_loopback_forms(webui):
-    for host in ("127.0.0.2", "localhost.evil", "[::1]:8765"):
+    for host in ("127.0.0.2", "localhost.evil", "[::1]:8777"):
         status, _, _ = _raw(webui, "/", host=host)
         assert status == 400, host
 
@@ -162,3 +162,42 @@ def test_unknown_page_404(webui):
     status, _, body = _raw(webui, "/nope")
     assert status == 404
     assert json.loads(body.decode("utf-8"))["kind"] == "NotFound"
+
+
+# —— 关闭语义与默认端口（创始人裁决：默认 8777） ——
+
+def test_shutdown_without_serve_does_not_hang():
+    """回归锁定：从未 serve_forever 时调用 shutdown() 必须立即返回。"""
+    from continuity.webui.server import WebUIServer
+
+    server = WebUIServer(port=0)
+    done = threading.Event()
+
+    def shutdown_and_signal():
+        server.shutdown()
+        done.set()
+
+    t = threading.Thread(target=shutdown_and_signal, daemon=True)
+    t.start()
+    t.join(timeout=5)
+    assert done.is_set(), "shutdown() 在未 serve_forever 时挂起（回归）"
+
+
+def test_server_default_port_is_8777():
+    import inspect
+
+    from continuity.webui.server import WebUIServer
+
+    sig = inspect.signature(WebUIServer.__init__)
+    assert sig.parameters["port"].default == 8777
+
+
+def test_main_help_mentions_default_8777(capsys):
+    import pytest as _pytest
+
+    from continuity.webui.__main__ import main
+
+    with _pytest.raises(SystemExit):
+        main(["--help"])
+    out = capsys.readouterr().out
+    assert "默认 8777" in out

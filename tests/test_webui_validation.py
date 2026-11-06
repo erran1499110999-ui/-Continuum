@@ -92,7 +92,7 @@ def test_require_new_output_dir_sibling_ok(tmp_path):
 
 @pytest.mark.parametrize(
     "host",
-    ["127.0.0.1", "127.0.0.1:8765", "localhost", "localhost:8765", "LOCALHOST:1"],
+    ["127.0.0.1", "127.0.0.1:8777", "localhost", "localhost:8777", "LOCALHOST:1"],
 )
 def test_host_is_allowed_yes(host):
     assert host_is_allowed(host) is True
@@ -108,7 +108,7 @@ def test_host_is_allowed_yes(host):
         "127.0.0.2",
         "localhost.evil",
         "127.0.0.1.evil",
-        "[::1]:8765",
+        "[::1]:8777",
     ],
 )
 def test_host_is_allowed_no(host):

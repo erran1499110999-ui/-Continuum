@@ -1,7 +1,8 @@
 """python -m continuity.webui 启动入口（仅绑定 127.0.0.1）。
 
 用法：
-  python -m continuity.webui [--port 8765] [--no-browser]
+  python -m continuity.webui [--port 8777] [--no-browser]
+默认端口 8777（原默认 8765 在开发机被百度输入法等常驻程序占用，经创始人裁决改为 8777）。
 """
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         prog="python -m continuity.webui",
         description="Continuity Studio 本地 Web UI（仅绑定 127.0.0.1，不上传任何数据）",
     )
-    parser.add_argument("--port", type=int, default=8765, help="监听端口（默认 8765）")
+    parser.add_argument("--port", type=int, default=8777, help="监听端口（默认 8777）")
     parser.add_argument(
         "--no-browser", action="store_true", help="启动后不自动打开浏览器"
     )

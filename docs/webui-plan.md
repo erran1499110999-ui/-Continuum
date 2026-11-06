@@ -69,7 +69,7 @@ Web UI 的每个页面即一个 CLI 命令的可视化 + 结果展示，见第 4
 | 通信 | JSON POST API + 轮询 job 状态 | POST 体传 UTF-8 路径，**避开中文路径出现在 URL query 的编码问题**（本项目大量中文路径）；无需 WebSocket |
 | 长任务 | `jobs.py` 单工作线程串行队列 | 引擎无进度回调，长任务只有粗粒度状态（queued/running/succeeded/failed + 日志缓冲）；本地单用户工具串行执行最稳 |
 | 安全 | 仅绑定 127.0.0.1；启动随机 token；Host 头白名单；CSP；前端全部 textContent 转义 | 见第 5 节 |
-| 启动 | `python -m continuity.webui`（`__main__.py`），默认端口 8765 | **不修改 cli.py**，避开外部开发者核心文件；浏览器自动打开为可选参数（沙箱内打不开则忽略） |
+| 启动 | `python -m continuity.webui`（`__main__.py`），默认端口 8777（2026-11-06 创始人裁决：原默认 8765 被百度输入法常驻占用） | **不修改 cli.py**，避开外部开发者核心文件；浏览器自动打开为可选参数（沙箱内打不开则忽略） |
 
 ### 2.3 备选方案对比
 
@@ -295,7 +295,7 @@ tests/test_webui_api_migration.py W6：迁移端点（items、匹配率、警示
 1. **技术栈**：确认方案 A（推荐）或改选 B/C（此时需逐项审查新增依赖清单）。
 2. **tests/ 新文件**：授权在 `tests/` 下新增 Web UI 测试文件（不改旧文件）。
 3. **入口方式**：`python -m continuity.webui` 是否可接受；是否要求同时改 `cli.py` 加 `webui` 子命令（需协调）。
-4. **默认端口**：8765 是否可用/保留。
+4. **默认端口**：已裁决为 **8777**（原 8765 被百度输入法等常驻程序占用，2026-11-06 创始人裁决；如遇占用仍可用 `--port` 指定其它端口）。
 5. **历史记录位置**：开发沙箱用 `.tmp/webui-history.jsonl`、正式运行回退 `%LOCALAPPDATA%` 的方案是否可接受。
 6. **与调研者衔接**：`docs/research-webui.md` 产出后，以创始人裁决为准对照修订本计划第 2 节。
 

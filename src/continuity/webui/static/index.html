@@ -42,12 +42,34 @@
       <dt>服务状态</dt><dd id="info-health">加载中…</dd>
       <dt>运行端口</dt><dd id="info-port">—</dd>
     </dl>
-    <p class="tip">当前为阶段 W1 骨架：概览页与健康/版本接口已可用；扫描、备份、校验、恢复、修复预览、迁移、历史日志页面将在 W2–W7 逐阶段开放。</p>
+    <p class="tip">当前进度：概览与扫描已可用（W1–W2）；备份、校验、恢复、修复预览、迁移、历史日志页面将在 W3–W7 逐阶段开放。</p>
   </section>
 
   <section id="page-scan" class="page hidden">
-    <h2>扫描</h2>
-    <p class="tip">只读扫描目录：类型统计、结构发现、重复文件（阶段 W2 开放）。</p>
+    <h2>扫描 <span class="badge-readonly">只读操作</span></h2>
+    <p class="desc">只读扫描目录：文件类型统计、结构发现与建议、内容重复文件组、跳过符号链接清单。源目录绝不会被修改。</p>
+    <form id="scan-form" class="form">
+      <label class="field" for="scan-source">
+        <span class="field-label">源目录（只读输入）</span>
+        <input type="text" id="scan-source" class="input" placeholder="例如 D:\data\sillytavern\data">
+      </label>
+      <div class="form-actions">
+        <button type="submit" id="scan-run" class="btn">开始扫描</button>
+        <span id="scan-state" class="state"></span>
+      </div>
+    </form>
+    <div id="scan-error" class="error hidden"></div>
+    <div id="scan-result" class="hidden">
+      <h3 id="scan-summary"></h3>
+      <h4>类型统计</h4>
+      <ul id="scan-kinds" class="list"></ul>
+      <h4>发现（<span id="scan-findings-count">0</span> 项）</h4>
+      <ul id="scan-findings" class="list"></ul>
+      <h4>内容重复文件组（<span id="scan-duplicates-count">0</span> 组）</h4>
+      <ul id="scan-duplicates" class="list"></ul>
+      <h4>跳过符号链接（<span id="scan-symlinks-count">0</span> 个）</h4>
+      <ul id="scan-symlinks" class="list"></ul>
+    </div>
   </section>
 
   <section id="page-backup" class="page hidden">
