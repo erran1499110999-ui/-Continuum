@@ -17,7 +17,7 @@ import pytest
 
 EXT_DIR = Path(__file__).resolve().parent.parent / "extensions" / "sillytavern" / "continuity-st"
 
-EXPECTED_FILES = {"manifest.json", "index.js", "checks.js", "style.css", "README.md", "package.json"}
+EXPECTED_FILES = {"manifest.json", "index.js", "checks.js", "style.css", "settings.html", "README.md", "package.json"}
 
 _SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 
@@ -350,6 +350,45 @@ def test_package_json_declares_module():
     data = json.loads(p.read_text(encoding="utf-8"))
     assert data.get("type") == "module"
     assert data.get("private") is True
+
+
+# —— P3 契约：唤起按钮 / slash command / 设置页 ——
+
+def test_index_js_has_webui_open_button():
+    """P3：面板含「打开本地 Web UI」按钮，仅 window.open 到 127.0.0.1（本轮无跨域探测）。"""
+    src = _read("index.js")
+    assert "continuity-check-open" in src, "index.js 缺少唤起按钮"
+    assert "window.open" in src, "index.js 未使用 window.open（本轮方案：仅新标签页唤起）"
+    assert "http://127.0.0.1:" in src, "唤起地址必须是 127.0.0.1"
+    assert "python -m continuity.webui" in src, "缺少「先运行本地 Web UI」的友好提示文案"
+
+
+def test_index_js_slash_command_registration():
+    """P3：/continuity 双路径注册——新式 addCommandObject 优先 + 旧式 registerSlashCommand 回退。"""
+    src = _read("index.js")
+    assert "addCommandObject" in src, "缺少新式 SlashCommandParser.addCommandObject 注册"
+    assert "registerSlashCommand" in src, "缺少旧式 registerSlashCommand 能力检测回退"
+    assert '"continuity"' in src, "slash 命令名不是 continuity"
+
+
+def test_index_js_reads_settings_via_extensionsettings():
+    """P3：端口与提示开关从 extensionSettings['continuity-st'] 读取，默认端口 8777。"""
+    src = _read("index.js")
+    assert "extensionSettings" in src, "index.js 未读取 extensionSettings"
+    assert '"continuity-st"' in src, "设置命名空间键不是 continuity-st（须与 ST 文件夹名一致）"
+    assert "8777" in src, "默认端口不是 8777"
+
+
+def test_settings_html_exists_no_keys_no_external():
+    """P3：设置页存在；含端口与提示开关字段；无密钥字段、无外部 URL。"""
+    p = EXT_DIR / "settings.html"
+    assert p.is_file(), "缺少 settings.html"
+    src = p.read_text(encoding="utf-8")
+    assert "webuiPort" in src and "showHints" in src, "设置页缺少 webuiPort/showHints 字段"
+    assert "8777" in src, "设置页默认端口不是 8777"
+    for pat in ("api_key", "apikey", "apiKey", "secret", "password", "token"):
+        assert pat.lower() not in src.lower(), f"settings.html 含密钥相关字段: {pat!r}"
+    assert _no_external_urls(src), "settings.html 含外部 URL（规则 2：零外部资源）"
 
 
 # —— 双语 README 占位 ——

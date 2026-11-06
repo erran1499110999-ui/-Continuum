@@ -12,7 +12,7 @@
   - `developer`：产品开发者——后端（server/api/jobs/validation/views/history）与 **ST 插件（当前最高优先级）**。
   - `frontend-developer`：前端开发者——Web UI 前端（static/、i18n/双语、设计系统、风格预览页）；字体/按键/交互严格参照 Claude 网页端。
   - `qa-reviewer`：测试与审核者——验收支持、每轮真实测试与规则审核、**注释正确性审查**。
-  - `researcher`：调研者兼【产品经理/商业策划/推广文案】——技术+商业+社区调研、产品可行性与商业性规划、宣传推广与文案设计、资源地图与设计案例（Claude 等）；只出报告与方案，不落地代码。
+  - `researcher`：调研者兼【产品经理/商业策划/推广文案/常驻资源中枢】——技术+商业+社区调研、产品可行性与商业性规划、宣传推广与文案设计、资源地图与设计案例（Claude 等）；**常驻运转**：连续按队列执行（st-launch-plan → team-capability-plan → live-resource-feed → business-feed → 发散主题轮转），每批交付即接下一批，发散思维从任何角度供给资源与能力提升建议；只出报告与方案，不落地代码。
 
 ## 写作用域约定（第一轮）
 

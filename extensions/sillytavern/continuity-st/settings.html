@@ -1,0 +1,27 @@
+<!--
+  Continuity 体检 — 扩展设置页（P3）
+  字段经 SillyTavern 扩展设置框架自动绑定到 extensionSettings["continuity-st"]，
+  由 index.js 的 getSettings() 读取；明文保存、无任何密钥字段（规则 2）。
+  本页不引用任何外部资源（无外链脚本/样式/字体）。
+-->
+<div class="inline-drawer">
+  <div class="inline-drawer-toggle inline-drawer-header">
+    <b>Continuity 体检</b>
+    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down"></div>
+  </div>
+  <div class="inline-drawer-content">
+    <label class="checkbox_label" for="continuity_check_show_hints">
+      <input type="checkbox" id="continuity_check_show_hints" name="showHints" checked>
+      <span>显示提示（体检说明与「本地 Web UI」引导文案）</span>
+    </label>
+    <div class="flex-container flexGap5 marginTop10">
+      <label for="continuity_check_webui_port">本地 Web UI 端口</label>
+      <input type="number" id="continuity_check_webui_port" name="webuiPort"
+             value="8777" min="1" max="65535" step="1">
+    </div>
+    <small>
+      仅用于在本机 127.0.0.1 打开 Continuity Studio 本地 Web UI；
+      如端口被其他程序占用，请与本地 Web UI 的 --port 参数保持一致。
+    </small>
+  </div>
+</div>

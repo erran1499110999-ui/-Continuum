@@ -26,9 +26,9 @@ API 密钥；除 `127.0.0.1`（本机 Continuity Studio 本地 Web UI）外，�
 
 | Stage · 阶段 | Feature · 功能 |
 |---|---|
-| P1（current · 当前） | Skeleton: version badge + empty panel · 骨架：版本徽标 + 空面板 |
-| P2 | In-memory health checks (H1–H6) · 内存态一键体检（H1–H6） |
-| P3 | Launch local Web UI (127.0.0.1:8777) + `/continuity` slash command · 一键唤起本地 Web UI + slash 命令 |
+| P1 ✓ | Skeleton: version badge + empty panel · 骨架：版本徽标 + 空面板 |
+| P2 ✓ | In-memory health checks (H1–H5) · 内存态一键体检（H1–H5） |
+| P3（current · 当前）| Launch local Web UI (127.0.0.1:8777, configurable) + `/continuity` slash command + settings page · 一键唤起本地 Web UI + slash 命令 + 设置页 |
 | P4 | Polish, i18n docs, official-listing readiness · 打磨、双语文档、官方收录准备 |
 
 ## License · 许可证
