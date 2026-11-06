@@ -1,21 +1,38 @@
-/* Continuity 体检（P1 骨架）：徽标与空面板的最小样式。P4 随 UI 设计系统统一打磨。 */
+/* Continuity 体检（P4 上市版）：温暖人文风面板。
+ * 美学基调（创始人确认）：橘/米暖色、毛玻璃、克制动效；无粒子/光斑等装饰动画。 */
+
+/* 暖色令牌（与本地 Web UI「暖阳奶油」主题同源） */
+:root {
+  --cs-bg-glass: rgba(255, 249, 240, 0.95);
+  --cs-bg-solid: #FFF9F0;
+  --cs-ink: #4A3B2C;
+  --cs-ink-2: #8A7A64;
+  --cs-border: rgba(122, 96, 64, 0.22);
+  --cs-accent: #E8843C;
+  --cs-on-accent: #3D2B1A;
+  --cs-accent-deep: #B95F1F;
+  --cs-shadow: rgba(90, 70, 50, 0.18);
+}
 
 .continuity-check-badge {
   position: fixed;
   right: 12px;
   bottom: 12px;
   z-index: 9999;
-  background: #1a2129;
-  color: #e6edf3;
-  border: 1px solid #2c3642;
+  background: var(--cs-bg-solid);
+  color: var(--cs-ink);
+  border: 1px solid var(--cs-border);
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 12px;
   cursor: pointer;
+  box-shadow: 0 2px 10px var(--cs-shadow);
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .continuity-check-badge:hover {
-  border-color: #4f9cf9;
+  border-color: var(--cs-accent);
+  transform: translateY(-1px);
 }
 
 .continuity-check-panel {
@@ -25,17 +42,28 @@
   z-index: 9999;
   width: 320px;
   max-width: calc(100vw - 24px);
-  background: #101418;
-  color: #e6edf3;
-  border: 1px solid #2c3642;
-  border-radius: 8px;
-  padding: 12px 14px;
+  background: var(--cs-bg-solid);
+  color: var(--cs-ink);
+  border: 1px solid var(--cs-border);
+  border-radius: 16px;
+  padding: 14px 16px;
   font-size: 13px;
+  box-shadow: 0 10px 32px var(--cs-shadow);
+}
+
+/* 毛玻璃增强（不支持 backdrop-filter 的环境回退纯色） */
+@supports (backdrop-filter: blur(1px)) {
+  .continuity-check-badge,
+  .continuity-check-panel {
+    background: var(--cs-bg-glass);
+    backdrop-filter: blur(20px) saturate(1.15);
+    -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  }
 }
 
 .continuity-check-title {
   font-weight: bold;
-  border-bottom: 1px solid #2c3642;
+  border-bottom: 1px solid var(--cs-border);
   padding-bottom: 8px;
   margin-bottom: 8px;
 }
@@ -45,41 +73,53 @@
 }
 
 .continuity-check-intro {
-  color: #9aa7b4;
+  color: var(--cs-ink-2);
   font-size: 12px;
   margin-bottom: 8px;
 }
 
 .continuity-check-run {
   width: 100%;
-  background: #4f9cf9;
-  color: #0b1220;
-  border: none;
-  border-radius: 8px;
+  background: var(--cs-accent);
+  color: var(--cs-on-accent); /* 橙底深棕文字（对比度要求，禁用白字橙底） */
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
   padding: 8px 12px;
   font-size: 13px;
   cursor: pointer;
   margin-bottom: 8px;
+  transition: filter 0.2s ease, transform 0.2s ease;
 }
 
 .continuity-check-run:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.continuity-check-run:active {
+  transform: translateY(0);
 }
 
 .continuity-check-open {
   width: 100%;
-  background: #1a2129;
-  color: #e6edf3;
-  border: 1px solid #2c3642;
-  border-radius: 8px;
+  background: transparent;
+  color: var(--cs-ink);
+  border: 1px solid var(--cs-border);
+  border-radius: 10px;
   padding: 8px 12px;
   font-size: 13px;
   cursor: pointer;
   margin-bottom: 10px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .continuity-check-open:hover {
-  border-color: #4f9cf9;
+  border-color: var(--cs-accent);
+  transform: translateY(-1px);
+}
+
+.continuity-check-open:active {
+  transform: translateY(0);
 }
 
 .continuity-check-results {
@@ -92,7 +132,7 @@
 }
 
 .continuity-check-item {
-  border-top: 1px solid #2c3642;
+  border-top: 1px solid var(--cs-border);
   padding: 6px 0;
 }
 
@@ -101,13 +141,13 @@
 }
 
 .continuity-check-item-detail {
-  color: #9aa7b4;
+  color: var(--cs-ink-2);
   margin-top: 2px;
 }
 
 .continuity-check-note {
-  color: #9aa7b4;
-  border-top: 1px dashed #2c3642;
+  color: var(--cs-ink-2);
+  border-top: 1px dashed var(--cs-border);
   margin-top: 8px;
   padding-top: 8px;
 }

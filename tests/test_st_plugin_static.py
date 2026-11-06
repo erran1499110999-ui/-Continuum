@@ -391,16 +391,38 @@ def test_settings_html_exists_no_keys_no_external():
     assert _no_external_urls(src), "settings.html 含外部 URL（规则 2：零外部资源）"
 
 
-# —— 双语 README 占位 ——
+# —— 双语 README（P4：完整上市版，占位全部移除） ——
 
-def test_readme_bilingual_placeholder():
+def test_readme_full_bilingual():
     src = _read("README.md")
-    assert "TODO-P4" in src, "README 应含 TODO-P4 占位标记"
-    assert "Installation" in src and "安装" in src, "README 缺英文/中文安装章节"
-    assert "Privacy Statement" in src and "隐私声明" in src, "README 缺英文/中文隐私声明"
-    assert "127.0.0.1" in src, "README 应说明仅访问 127.0.0.1"
-    assert "MIT" in src, "README 应标注 MIT 许可证"
-    assert "1.12.0" in src, "README 应标注 minimum_client_version 1.12.0"
+    assert "TODO-P4" not in src, "P4 占位标记应已移除（README 为完整上市版）"
+    for token in (
+        "Installation", "安装",
+        "Usage", "使用说明",
+        "Privacy Statement", "隐私声明",
+        "Compatibility", "兼容性声明",
+        "License", "许可证",
+        "MIT",
+        "1.12.0",
+        "127.0.0.1",
+    ):
+        assert token in src, f"README 缺少双语章节/关键声明: {token!r}"
+
+
+# —— P4 契约：staging 零依赖 / 版本提示仅能力检测 ——
+
+def test_js_no_staging_dependency(js_source):
+    """P4：不依赖任何 staging 事件/特性（官方只保证 release 行为）。"""
+    name, src = js_source
+    assert "staging" not in src.lower(), f"{name} 依赖 staging 事件/特性（P4 契约）"
+
+
+def test_index_js_version_hint_capability_only():
+    """P4：版本门槛提示存在，且只用能力检测——不得比较版本号字段（格式变化会误判）。"""
+    src = _read("index.js")
+    assert "detectVersionHints" in src, "index.js 缺少版本门槛提示逻辑"
+    assert "1.12.0" in src, "提示文案缺少建议版本 1.12.0"
+    assert "_version" not in src, "版本提示不得读取/比较版本号字段（只用能力检测）"
 
 
 def test_manifest_display_name_matches_readme():

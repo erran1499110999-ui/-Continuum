@@ -73,6 +73,37 @@ import { runChecks } from "./checks.js";
     };
   }
 
+  /**
+   * 版本门槛提示（只用能力检测，绝不做版本号字符串比较——版本格式会变，比较易误判）：
+   * 依据 1.12+ 扩展体系的关键能力是否存在，给出「建议升级」级别的提示而非阻断。
+   */
+  function detectVersionHints(ctx) {
+    const hints = [];
+    // 设置持久化能力：1.12+ 扩展体系的基础；缺失时端口/提示开关只能走默认值
+    if (
+      !ctx ||
+      typeof ctx !== "object" ||
+      !ctx.extensionSettings ||
+      typeof ctx.extensionSettings !== "object"
+    ) {
+      hints.push(
+        "当前 SillyTavern 版本可能过低（建议 ≥ 1.12.0）：扩展设置不可用，将使用默认配置。"
+      );
+    }
+    const parser =
+      (ctx.SlashCommandParser) ||
+      (typeof SillyTavern !== "undefined" ? SillyTavern.SlashCommandParser : null) ||
+      (typeof window !== "undefined" ? window.SlashCommandParser : null) ||
+      null;
+    const hasSlash =
+      (parser && typeof parser.addCommandObject === "function") ||
+      (ctx.registerSlashCommand && typeof ctx.registerSlashCommand === "function");
+    if (!hasSlash) {
+      hints.push("当前版本不支持 slash command 注册，请使用面板按钮。");
+    }
+    return hints;
+  }
+
   /** 渲染体检结果：全部 textContent/节点 API，绝不把数据当 HTML 解析（规则 3）。 */
   function renderFindings(container, result, showHints) {
     while (container.firstChild) {
@@ -278,13 +309,21 @@ import { runChecks } from "./checks.js";
       );
       return;
     }
-    console.debug("Continuity 体检: P3 入口模块已加载（" + NAME + " v" + VERSION + "）。");
+    console.debug("Continuity 体检: P4 上市就绪（" + NAME + " v" + VERSION + "）。");
     buildShell();
-    // 提示开关关闭时收起说明文案（设置页可改，下次启动生效）
-    if (!getSettings(context).showHints) {
-      const intro = document.getElementById("continuity-check-intro");
-      if (intro) {
+    const settings = getSettings(context);
+    // 版本门槛提示：只用能力检测（detectVersionHints），绝不做版本号字符串比较
+    const hints = detectVersionHints(context);
+    for (const hint of hints) {
+      console.warn("Continuity 体检: " + hint);
+    }
+    const intro = document.getElementById("continuity-check-intro");
+    if (intro) {
+      if (!settings.showHints) {
+        // 提示开关关闭时收起说明文案（设置页可改，下次启动生效）
         intro.classList.add("hidden");
+      } else if (hints.length > 0) {
+        intro.textContent = hints.join("；") + "。" + intro.textContent;
       }
     }
     registerSlashCommand();

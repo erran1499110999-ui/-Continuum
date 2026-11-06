@@ -102,6 +102,27 @@ Launch · 启动（纯标准库实现，零新增依赖 / pure-stdlib, zero extr
   backup / verify / restore / repair / migrate / history pages land in W3–W7.
   概览与扫描页已可用（W1–W2）；备份/校验/恢复/修复预览/迁移/历史日志页将在 W3–W7 逐阶段开放。
 
+## ST 插件（SillyTavern 扩展）· SillyTavern Extension
+
+> **定位一句话 / One-liner**：
+> 「Continuity 体检：酒馆内的一键内存体检。深度检查、备份、恢复与迁移请打开本地 Web UI——数据不出你的电脑。」
+> "Continuity Checkup: a one-click, read-only health peek inside the tavern. For deep scans,
+> backups and migration open the local Web UI — your data never leaves your machine."
+
+- **安装 / Install**：copy `extensions/sillytavern/continuity-st/` into SillyTavern's extensions
+  directory (`data/<user-handle>/extensions/`) and enable it in the Extensions panel.
+  将 `extensions/sillytavern/continuity-st/` 放入 SillyTavern 扩展目录（`data/<用户句柄>/extensions/`），
+  在扩展面板启用。Requires SillyTavern ≥ 1.12.0 · 要求 SillyTavern ≥ 1.12.0。
+- **功能 / Features**：in-memory health check (H1–H5, read-only) · one-click launch of the local
+  Web UI (127.0.0.1:8777, configurable) · `/continuity` slash command · settings page.
+  内存态一键体检（H1–H5，只读）· 一键唤起本地 Web UI（127.0.0.1:8777，可配置）· `/continuity`
+  slash 命令 · 设置页。MIT 许可，免费、无广告、无遥测 · MIT licensed, free, no ads, no telemetry.
+- **与网页版的关系 / Relationship to the Web UI**：the extension is a **customer-acquisition entry
+  point（获客入口）**——a thin shell that surfaces in-tavern hints and guides users to the local
+  Web UI for deep scans, backup, restore, repair and migration; it never re-implements engine logic.
+  插件是薄壳与获客入口：在酒馆内给出内存态提示并引导到本地 Web UI 完成深度体检、备份、恢复、修复与迁移；
+  绝不重复实现引擎逻辑。See 详见 [extensions/sillytavern/continuity-st/README.md](extensions/sillytavern/continuity-st/README.md)。
+
 ## Running Tests · 运行测试
 
 ```powershell
